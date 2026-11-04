@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { areaEstaca, dispersao, media } from '../core/curva';
 import { fmt } from '../core/formato';
 import type { Interpretacao } from '../core/metodos';
-import type { Ensaio, Estaca, Estagio } from '../core/types';
+import type { Ensaio, Estaca, Estagio, NomeUnidade } from '../core/types';
 import { Campo, NumInput } from './Campos';
 import { Grafico } from './Grafico';
 import { figuraCargaRecalque, figuraTempoRecalque, type Visual } from './figuras';
@@ -17,10 +17,13 @@ interface Props {
   interp: Interpretacao;
   vis: Visual;
   onAvancar: () => void;
+  unidadeOrigem: NomeUnidade;
+  setUnidadeOrigem: (u: NomeUnidade) => void;
 }
 
-export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvancar }: Props) {
+export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvancar, unidadeOrigem, setUnidadeOrigem }: Props) {
   const est = ensaio.estaca;
+  const U = interp.ctx.U;
   const setEst = (p: Partial<Estaca>) => setEnsaio({ ...ensaio, estaca: { ...est, ...p } });
   const setEstagio = (i: number, p: Partial<Estagio>) =>
     setEnsaio({ ...ensaio, estagios: ensaio.estagios.map((s, k) => (k === i ? { ...s, ...p } : s)) });
@@ -33,7 +36,7 @@ export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvanca
   const A = areaEstaca(ensaio);
 
   const figCR = useMemo(() => (vis.escala ? figuraCargaRecalque(ensaio, interp, vis, new Set()) : null), [ensaio, interp, vis]);
-  const figTR = useMemo(() => (vis.escala ? figuraTempoRecalque(ensaio, vis) : null), [ensaio, vis]);
+  const figTR = useMemo(() => (vis.escala ? figuraTempoRecalque(ensaio, vis, U) : null), [ensaio, vis]);
 
   const nAlertas = ensaio.estagios.filter((s) => (dispersao(s.rFim, ensaio.relogioAtivo) ?? 0) > LIMITE_DISPERSAO).length;
 
@@ -64,7 +67,7 @@ export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvanca
             <NumInput valor={est.area} casas={5} placeholder={fmt(A, 5)} onChange={(v) => setEst({ area: v })} />
           </Campo>
           <Campo rotulo="Módulo E" unidade="GPa"><NumInput valor={est.E} casas={1} onChange={(v) => setEst({ E: v ?? 20 })} /></Campo>
-          <Campo rotulo="Carga de trabalho estimada" unidade="kN" dica="Define a escala do gráfico (reta a 20° ± 5° com o eixo das cargas).">
+          <Campo rotulo="Carga de trabalho estimada" unidade={U} dica="Define a escala do gráfico (reta a 20° ± 5° com o eixo das cargas).">
             <NumInput valor={est.Qt} casas={1} placeholder={vis.Qt ? `sugerido ${fmt(vis.Qt, 0)}` : ''} onChange={(v) => setEst({ Qt: v })} />
           </Campo>
           <Campo rotulo="Cota de arrasamento / execução" unidade="m"><input className="input" value={est.cotaArrasamento} onChange={(e) => setEst({ cotaArrasamento: e.target.value })} /></Campo>
@@ -75,11 +78,18 @@ export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvanca
             <input className="input" value={est.horaInicio} onChange={(e) => setEst({ horaInicio: e.target.value })} />
             <input className="input" value={est.horaFim} onChange={(e) => setEst({ horaFim: e.target.value })} />
           </span></Campo>
+          <Campo rotulo="Cargas da planilha em" dica="Unidade em que as cargas foram digitadas na planilha. Alterar aqui reinterpreta os valores (não converte).">
+            <span className="segmentado">
+              {(['kN', 'tf'] as const).map((u) => (
+                <button key={u} type="button" className={unidadeOrigem === u ? 'ativo' : ''} onClick={() => setUnidadeOrigem(u)}>{u}</button>
+              ))}
+            </span>
+          </Campo>
           <Campo rotulo="Executor / responsável"><input className="input" value={est.executor} onChange={(e) => setEst({ executor: e.target.value })} /></Campo>
         </div>
         {vis.QtSugerido && vis.Qt !== null && (
           <div className="alerta alerta--info">
-            Carga de trabalho estimada não informada: usando o valor sugerido <b>{fmt(vis.Qt, 1)} kN</b> (Qmáx / 2) para definir a escala. Informe o valor do projeto, se disponível.
+            Carga de trabalho estimada não informada: usando o valor sugerido <b>{fmt(vis.Qt, 1)} {U}</b> (Qmáx / 2) para definir a escala. Informe o valor do projeto, se disponível.
           </div>
         )}
       </div>
@@ -109,7 +119,7 @@ export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvanca
           <table className="tabela tabela--editavel">
             <thead>
               <tr>
-                <th rowSpan={2}>Usar</th><th rowSpan={2}>Estágio</th><th rowSpan={2}>Fase</th><th rowSpan={2}>Carga (kN)</th>
+                <th rowSpan={2}>Usar</th><th rowSpan={2}>Estágio</th><th rowSpan={2}>Fase</th><th rowSpan={2}>Carga ({U})</th>
                 <th rowSpan={2}>Hora início</th><th rowSpan={2}>Hora fim</th>
                 <th colSpan={ensaio.nRelogios} className="grupo">Leitura inicial (mm)</th>
                 <th colSpan={ensaio.nRelogios} className="grupo">Leitura final (mm)</th>
@@ -163,7 +173,7 @@ export function PassoConferir({ ensaio, setEnsaio, avisos, interp, vis, onAvanca
       {figCR && vis.escala && (
         <div className="duas-colunas">
           <div className="cartao">
-            <Grafico {...figCR} nomeArquivo="carga-deslocamento" titulo="Carga × deslocamento" legenda={<SeloAngulo e={vis.escala} />} />
+            <Grafico {...figCR} nomeArquivo="carga-deslocamento" titulo="Carga × deslocamento" legenda={<SeloAngulo e={vis.escala} U={U} />} />
           </div>
           {figTR && (
             <div className="cartao">

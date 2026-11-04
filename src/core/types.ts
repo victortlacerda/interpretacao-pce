@@ -1,9 +1,21 @@
 export type Fase = 'C' | 'D';
 
+export type NomeUnidade = 'kN' | 'tf';
+
+/** Unidade de força: `fator` = quantos kN valem 1 unidade. */
+export interface Unidade {
+  nome: NomeUnidade;
+  fator: number;
+}
+
+export const UNIDADE_KN: Unidade = { nome: 'kN', fator: 1 };
+/** 1 tf = 9,80665 kN (gravidade padrão); 10 kN como aproximação opcional. */
+export const FATOR_TF_PADRAO = 9.80665;
+
 export interface Estagio {
   n: number;
   fase: Fase;
-  Q: number; // kN
+  Q: number; // na unidade de origem do ensaio
   hIni: string; // hh:mm
   hFim: string;
   rIni: (number | null)[]; // mm, por relógio
@@ -21,7 +33,7 @@ export interface Estaca {
   L: number; // m
   area: number | null; // m² (null = calcula πD²/4)
   E: number; // GPa
-  Qt: number | null; // kN — carga de trabalho estimada
+  Qt: number | null; // carga de trabalho estimada, na unidade de origem
   cotaArrasamento: string;
   cotaPonta: string;
   tipoCarregamento: string;
@@ -32,6 +44,8 @@ export interface Estaca {
 }
 
 export interface Ensaio {
+  /** unidade de força das cargas armazenadas (a da planilha importada) */
+  unidadeOrigem: NomeUnidade;
   estaca: Estaca;
   estagios: Estagio[];
   nRelogios: number;

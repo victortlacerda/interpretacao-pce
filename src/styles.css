@@ -225,3 +225,13 @@ a { color: var(--p600); }
   .quebra { break-inside: avoid; }
   .tabela-rolagem { overflow: visible; }
 }
+
+/* unidade */
+.topo__dir { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.unidade { display: flex; align-items: center; gap: 8px; }
+.unidade__rot { font-size: 12px; color: var(--muted); font-weight: 500; }
+.segmentado { display: inline-flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; background: #fff; }
+.segmentado button { font: inherit; font-weight: 600; font-size: 13px; border: 0; background: transparent; color: var(--p700); padding: 5px 14px; cursor: pointer; }
+.segmentado button + button { border-left: 1px solid var(--borda); }
+.segmentado button.ativo { background: var(--p600); color: #fff; }
+.unidade .input--sel { font-size: 12px; color: var(--muted); }

@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { interpretar } from './core/metodos';
-import { PARAMETROS_PADRAO, type Ensaio, type Parametros } from './core/types';
+import { FATOR_TF_PADRAO, PARAMETROS_PADRAO, type Ensaio, type NomeUnidade, type Parametros, type Unidade } from './core/types';
+import { ensaioNaUnidade } from './core/curva';
+import { fmt } from './core/formato';
 import { escalaNormativa } from './ui/figuras';
 import { PassoImportar } from './ui/PassoImportar';
 import { PassoConferir } from './ui/PassoConferir';
@@ -16,12 +18,22 @@ export default function App() {
   const [passo, setPasso] = useState(0);
   const [params, setParams] = useState<Parametros>(PARAMETROS_PADRAO);
   const [visiveis, setVisiveis] = useState<Set<string>>(new Set(VISIVEIS_PADRAO));
+  const [unidade, setUnidade] = useState<NomeUnidade>('kN');
+  const [fatorTf, setFatorTf] = useState(FATOR_TF_PADRAO);
 
-  const interp = useMemo(() => (ensaio ? interpretar(ensaio, params) : null), [ensaio, params]);
-  const vis = useMemo(() => (ensaio && interp ? escalaNormativa(ensaio, interp, visiveis) : null), [ensaio, interp, visiveis]);
-  const visBase = useMemo(() => (ensaio && interp ? escalaNormativa(ensaio, interp, new Set()) : null), [ensaio, interp]);
+  const u: Unidade = useMemo(() => ({ nome: unidade, fator: unidade === 'tf' ? fatorTf : 1 }), [unidade, fatorTf]);
+  /** ensaio com as cargas na unidade de exibição */
+  const ensU = useMemo(() => (ensaio ? ensaioNaUnidade(ensaio, unidade, fatorTf) : null), [ensaio, unidade, fatorTf]);
+  /** edição feita na unidade de exibição → volta para a unidade de origem */
+  const setEnsU = (e: Ensaio) => setEnsaio(ensaioNaUnidade(e, ensaio!.unidadeOrigem, fatorTf));
 
-  const carregar = (e: Ensaio, av: string[]) => { setEnsaio(e); setAvisos(av); setPasso(1); };
+  const interp = useMemo(() => (ensU ? interpretar(ensU, params, u) : null), [ensU, params, u]);
+  const vis = useMemo(() => (ensU && interp ? escalaNormativa(ensU, interp, visiveis) : null), [ensU, interp, visiveis]);
+  const visBase = useMemo(() => (ensU && interp ? escalaNormativa(ensU, interp, new Set()) : null), [ensU, interp]);
+
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [passo]);
+
+  const carregar = (e: Ensaio, av: string[]) => { setEnsaio(e); setUnidade(e.unidadeOrigem); setAvisos(av); setPasso(1); };
 
   return (
     <div className="app">
@@ -36,6 +48,19 @@ export default function App() {
             <div className="topo__sub">Prova de carga estática em estacas</div>
           </div>
         </div>
+        <div className="topo__dir">
+        <div className="unidade" title="Unidade de força usada em tabelas, gráficos e memória de cálculo">
+          <span className="unidade__rot">Unidade</span>
+          <span className="segmentado">
+            {(['kN', 'tf'] as const).map((x) => (
+              <button key={x} type="button" className={unidade === x ? 'ativo' : ''} onClick={() => setUnidade(x)}>{x}</button>
+            ))}
+          </span>
+          <select className="input input--sel" value={fatorTf} onChange={(e) => setFatorTf(Number(e.target.value))} title="Fator de conversão">
+            <option value={FATOR_TF_PADRAO}>1 tf = {fmt(FATOR_TF_PADRAO, 5)} kN</option>
+            <option value={10}>1 tf = 10 kN (aprox.)</option>
+          </select>
+        </div>
         {ensaio && (
           <div className="topo__ensaio">
             <span>{ensaio.estaca.obra || 'Obra sem nome'}</span>
@@ -44,6 +69,7 @@ export default function App() {
             {ensaio.estaca.estaca && <><span className="topo__sep">·</span><span>{ensaio.estaca.estaca}</span></>}
           </div>
         )}
+        </div>
       </header>
 
       <nav className="passos" aria-label="Etapas">
@@ -62,16 +88,17 @@ export default function App() {
 
       <main className="conteudo">
         {passo === 0 && <PassoImportar onCarregar={carregar} />}
-        {passo === 1 && ensaio && interp && visBase && (
-          <PassoConferir ensaio={ensaio} setEnsaio={setEnsaio} avisos={avisos} interp={interp} vis={visBase} onAvancar={() => setPasso(2)} />
+        {passo === 1 && ensaio && ensU && interp && visBase && (
+          <PassoConferir ensaio={ensU} setEnsaio={setEnsU}
+            unidadeOrigem={ensaio.unidadeOrigem} setUnidadeOrigem={(x) => setEnsaio({ ...ensaio, unidadeOrigem: x })} avisos={avisos} interp={interp} vis={visBase} onAvancar={() => setPasso(2)} />
         )}
-        {passo === 2 && ensaio && interp && vis && (
+        {passo === 2 && ensU && interp && vis && (
           <PassoInterpretar
-            ensaio={ensaio} interp={interp} vis={vis} params={params} setParams={setParams}
+            ensaio={ensU} interp={interp} vis={vis} params={params} setParams={setParams}
             visiveis={visiveis} setVisiveis={setVisiveis} onMemoria={() => setPasso(3)}
           />
         )}
-        {passo === 3 && ensaio && interp && vis && <PassoMemoria ensaio={ensaio} interp={interp} vis={vis} visiveis={visiveis} />}
+        {passo === 3 && ensU && interp && vis && <PassoMemoria ensaio={ensU} interp={interp} vis={vis} visiveis={visiveis} />}
       </main>
 
       <footer className="rodape">

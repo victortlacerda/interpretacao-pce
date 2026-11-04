@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { parseNum } from './formato';
-import type { Ensaio, Estaca, Estagio } from './types';
+import { FATOR_TF_PADRAO, type Ensaio, type Estaca, type Estagio, type NomeUnidade } from './types';
 
 const norm = (s: unknown) =>
   String(s ?? '')
@@ -58,11 +58,20 @@ const CAMPOS: [RegExp, keyof Estaca][] = [
 ];
 const NUMERICOS: (keyof Estaca)[] = ['D', 'Dponta', 'L', 'area', 'E', 'Qt'];
 
-export function lerPlanilha(buf: ArrayBuffer): { ensaio: Ensaio; avisos: string[] } {
+const unidadeDe = (txt: unknown): NomeUnidade | null => {
+  const t = norm(txt);
+  if (/\btf\b|tonelada/.test(t)) return 'tf';
+  if (/\bkn\b|quilonewton/.test(t)) return 'kN';
+  return null;
+};
+
+export function lerPlanilha(buf: ArrayBuffer, fatorTf = FATOR_TF_PADRAO): { ensaio: Ensaio; avisos: string[] } {
   const wb = XLSX.read(buf, { type: 'array' });
   const avisos: string[] = [];
   const aba = (re: RegExp) => wb.SheetNames.find((n) => re.test(norm(n)));
   const est = estacaVazia();
+  let unidCampo: NomeUnidade | null = null;
+  let unidQt: NomeUnidade | null = null;
 
   const nIdent = aba(/ident/);
   if (nIdent) {
@@ -70,6 +79,8 @@ export function lerPlanilha(buf: ArrayBuffer): { ensaio: Ensaio; avisos: string[
     for (const row of rows) {
       const campo = norm(row[0]);
       const val = row[1];
+      if (/unidade de (carga|forca)/.test(campo)) { unidCampo = unidadeDe(val); continue; }
+      if (/carga de trabalho/.test(campo)) unidQt = unidadeDe(row[2]) ?? unidadeDe(row[0]);
       const def = CAMPOS.find(([re]) => re.test(campo));
       if (!def || val === undefined || val === null || val === '') continue;
       const k = def[1];
@@ -89,6 +100,10 @@ export function lerPlanilha(buf: ArrayBuffer): { ensaio: Ensaio; avisos: string[
   if (iCab < 0) throw new Error('Não encontrei a linha de cabeçalho com a coluna "Carga" na aba de estágios.');
   const cab = rows[iCab].map(norm);
   const col = (re: RegExp) => cab.findIndex((c) => re.test(c));
+  const unidCab = unidadeDe(rows[iCab][cab.findIndex((c) => /carga/.test(c))]);
+  const unidade: NomeUnidade = unidCab ?? unidCampo ?? 'kN';
+  if (!unidCab && !unidCampo) avisos.push('Unidade de carga não indicada na planilha: assumido kN. Ajuste no seletor de unidade, se necessário.');
+  if (est.Qt !== null && unidQt && unidQt !== unidade) est.Qt = unidQt === 'tf' ? est.Qt * fatorTf : est.Qt / fatorTf;
   const cEst = col(/^estagio/), cFase = col(/^fase/), cQ = col(/carga/), cHi = col(/hora.*ini/), cHf = col(/hora.*fim/);
   const cHora = col(/^hora$/);
   const relIni: number[] = [], relFim: number[] = [];
@@ -125,5 +140,5 @@ export function lerPlanilha(buf: ArrayBuffer): { ensaio: Ensaio; avisos: string[
     });
   }
   if (!estagios.length) throw new Error('Nenhum estágio com leituras foi encontrado.');
-  return { ensaio: { estaca: est, estagios, nRelogios: nRel, relogioAtivo: Array(nRel).fill(true) }, avisos };
+  return { ensaio: { unidadeOrigem: unidade, estaca: est, estagios, nRelogios: nRel, relogioAtivo: Array(nRel).fill(true) }, avisos };
 }

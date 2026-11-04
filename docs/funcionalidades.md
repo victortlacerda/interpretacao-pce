@@ -14,7 +14,7 @@ Marque cada item como 🟢 aprovado ou 🔴 reprovado. IDs servem para referênc
 | A6 | Edição dos dados em tabela no próprio app (corrigir leitura sem reabrir o Excel) | 🟡 |
 | A7 | Mapeamento de colunas flexível para planilhas fora do padrão (de empresas de ensaio diferentes) | 🟡 |
 | A8 | Propriedades da estaca informadas pelo usuário: tipo, D, L, cotas; E = 20 GPa por padrão; todos os parâmetros editáveis | 🟢 |
-| A9 | Conversão de unidades (tf ↔ kN, mm ↔ cm) | 🟡 |
+| A9 | **Entrada e exibição em kN ou tf**, com conversão automática (1 tf = 9,80665 kN; opção 10 kN) em tabelas, gráficos e memória de cálculo | 🟢 |
 | A10 | Importar múltiplos ensaios de uma obra de uma vez | 🟡 |
 
 ## B. Gráficos

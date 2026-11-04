@@ -3,10 +3,13 @@ import { readFileSync } from 'node:fs';
 import { interpretar, varreduraVdV } from './metodos';
 import { calcularEscala, anguloGraus } from './escala';
 import { lerPlanilha } from './importar';
-import { PARAMETROS_PADRAO, type Ensaio, type Ponto } from './types';
+import { FATOR_TF_PADRAO, PARAMETROS_PADRAO, type Ensaio, type Ponto } from './types';
+import { ensaioNaUnidade } from './curva';
+import * as XLSX from 'xlsx';
 
 function ensaioDe(pts: Ponto[], extra: Partial<Ensaio['estaca']> = {}): Ensaio {
   return {
+    unidadeOrigem: 'kN',
     estaca: {
       obra: 't', referencia: 't', estaca: 't', tipo: 't', D: 500, Dponta: null, L: 14, area: null, E: 20, Qt: 1000,
       cotaArrasamento: '', cotaPonta: '', tipoCarregamento: 'lento', data: '', horaInicio: '', horaFim: '', executor: '', ...extra,
@@ -107,5 +110,38 @@ describe('Importação da planilha-modelo', () => {
     const aoki = res.resultados.find((r) => r.id === 'aoki')!;
     expect(aoki.Qu! / 2600).toBeGreaterThan(0.85);
     expect(aoki.Qu! / 2600).toBeLessThan(1.15);
+  });
+});
+
+describe('Unidades kN ↔ tf', () => {
+  const Qu = 2600, a = 0.11, b = 0.02;
+  const pts = [200, 400, 600, 800, 1000, 1200, 1400, 1600, 1800, 2000].map((Q) => ({ Q, r: Math.max(0, (-Math.log(1 - Q / Qu) - b) / a) }));
+  for (const f of [FATOR_TF_PADRAO, 10]) {
+    it(`todos os métodos dão o mesmo resultado físico em tf (1 tf = ${f} kN)`, () => {
+      const ens = ensaioDe(pts);
+      const rk = interpretar(ens, PARAMETROS_PADRAO).resultados;
+      const rt = interpretar(ensaioNaUnidade(ens, 'tf', f), PARAMETROS_PADRAO, { nome: 'tf', fator: f }).resultados;
+      rk.forEach((r, i) => {
+        if (r.Qu === null) { expect(rt[i].Qu).toBeNull(); return; }
+        expect(rt[i].Qu! * f).toBeCloseTo(r.Qu, 1);
+        if (r.ru !== null) expect(rt[i].ru!).toBeCloseTo(r.ru, 3);
+      });
+    });
+  }
+  it('conversão de ida e volta preserva os valores', () => {
+    const ens = ensaioDe(pts);
+    const volta = ensaioNaUnidade(ensaioNaUnidade(ens, 'tf', FATOR_TF_PADRAO), 'kN', FATOR_TF_PADRAO);
+    volta.estagios.forEach((s, i) => expect(s.Q).toBeCloseTo(ens.estagios[i].Q, 9));
+    expect(volta.unidadeOrigem).toBe('kN');
+  });
+  it('importa planilha com cargas em tf pelo cabeçalho', () => {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Campo', 'Valor', 'Unidade'], ['Diâmetro D', 400, 'mm'], ['Comprimento L', 12, 'm'], ['Carga de trabalho estimada (Qt)', 1000, 'kN']]), 'Identificacao');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Estágio', 'Fase', 'Carga (tf)', 'R1 fim (mm)'], [1, 'C', 20, 0.5], [2, 'C', 40, 1.2]]), 'Estagios');
+    const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+    const { ensaio } = lerPlanilha(buf);
+    expect(ensaio.unidadeOrigem).toBe('tf');
+    expect(ensaio.estagios[1].Q).toBe(40);
+    expect(ensaio.estaca.Qt!).toBeCloseTo(1000 / FATOR_TF_PADRAO, 6);
   });
 });

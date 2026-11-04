@@ -22,6 +22,7 @@ interface Props {
 export const STATUS_TXT: Record<Resultado['status'], string> = { ok: 'ok', 'nao-atingido': 'não atingido', invalido: 'não aplicável' };
 
 export function PassoInterpretar({ ensaio, interp, vis, params, setParams, visiveis, setVisiveis, onMemoria }: Props) {
+  const U = interp.ctx.U;
   const [sel, setSel] = useState('aoki');
   const [mostrarParams, setMostrarParams] = useState(false);
   const fig = useMemo(() => (vis.escala ? figuraCargaRecalque(ensaio, interp, vis, visiveis) : null), [ensaio, interp, vis, visiveis]);
@@ -47,12 +48,12 @@ export function PassoInterpretar({ ensaio, interp, vis, params, setParams, visiv
       <div className="interpretar">
         <div className="cartao interpretar__grafico">
           {fig && vis.escala && (
-            <Grafico {...fig} nomeArquivo="carga-deslocamento-interpretacao" titulo="Carga × deslocamento" legenda={<SeloAngulo e={vis.escala} />} />
+            <Grafico {...fig} nomeArquivo="carga-deslocamento-interpretacao" titulo="Carga × deslocamento" legenda={<SeloAngulo e={vis.escala} U={U} />} />
           )}
           {vis.escala && (
             <p className="nota">
-              Escala: {fmt(vis.escala.sQ, 0)} kN/cm × {fmt(vis.escala.sR, 2)} mm/cm. Reta origem → carga de trabalho estimada
-              ({fmt(vis.Qt, 0)} kN{vis.QtSugerido ? ', sugerida = Qmáx/2' : ''}) com {fmt(vis.escala.angulo, 1)}° em relação ao eixo das cargas.
+              Escala: {fmt(vis.escala.sQ, 0)} {U}/cm × {fmt(vis.escala.sR, 2)} mm/cm. Reta origem → carga de trabalho estimada
+              ({fmt(vis.Qt, 0)} {U}{vis.QtSugerido ? ', sugerida = Qmáx/2' : ''}) com {fmt(vis.escala.angulo, 1)}° em relação ao eixo das cargas.
             </p>
           )}
         </div>
@@ -67,7 +68,7 @@ export function PassoInterpretar({ ensaio, interp, vis, params, setParams, visiv
                   <span className="metodo__cor" style={{ background: CORES[r.id] }} />
                   <span className="metodo__nome">{r.nome}</span>
                   <span className={`metodo__valor ${r.status !== 'ok' ? 'txt-mudo' : ''}`}>
-                    {r.Qu !== null ? `${fmt(r.Qu, 0)} kN` : STATUS_TXT[r.status]}
+                    {r.Qu !== null ? `${fmt(r.Qu, 0)} ${U}` : STATUS_TXT[r.status]}
                   </span>
                 </div>
               ))}
@@ -107,7 +108,7 @@ export function PassoInterpretar({ ensaio, interp, vis, params, setParams, visiv
         <div className="tabela-rolagem">
           <table className="tabela">
             <thead>
-              <tr><th>Método</th><th>Tipo</th><th>Qu (kN)</th><th>r (mm)</th><th>Obtido sobre</th><th>R²</th><th>Qmáx/Qu</th><th>Situação</th></tr>
+              <tr><th>Método</th><th>Tipo</th><th>Qu ({U})</th><th>r (mm)</th><th>Obtido sobre</th><th>R²</th><th>Qmáx/Qu</th><th>Situação</th></tr>
             </thead>
             <tbody>
               {interp.resultados.map((r) => (
@@ -126,7 +127,7 @@ export function PassoInterpretar({ ensaio, interp, vis, params, setParams, visiv
             <tfoot>
               <tr>
                 <td colSpan={2}>Carga máxima do ensaio</td><td className="num forte">{fmt(interp.ctx.Qmax, 1)}</td><td className="num">{fmt(interp.ctx.rmax, 2)}</td>
-                <td colSpan={4} className="txt-mudo">Média dos métodos válidos: {fmt(mediaQu, 1)} kN ({qs.length} métodos)</td>
+                <td colSpan={4} className="txt-mudo">Média dos métodos válidos: {fmt(mediaQu, 1)} {U} ({qs.length} métodos)</td>
               </tr>
             </tfoot>
           </table>

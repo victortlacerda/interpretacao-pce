@@ -1,7 +1,10 @@
 import { ajusteLinear, ajusteOrigem, type Ajuste } from './regressao';
 import { QdeR, rDeQ, intersecaoMedida, bissecao, areaEstaca, diametroPonta, pontosCarregamento } from './curva';
 import { fmt, fmtSci, tx } from './formato';
-import type { Ensaio, Parametros, Ponto, Resultado, Passo, Tabela } from './types';
+import { UNIDADE_KN, type Ensaio, type Parametros, type Ponto, type Resultado, type Passo, type Tabela, type Unidade } from './types';
+
+/** Unidade de força em uso (definida em interpretar). */
+let U = 'kN';
 
 // ---------------------------------------------------------------------------
 // Contexto
@@ -16,6 +19,8 @@ export interface Contexto {
   L: number; // m
   A: number; // m²
   E: number; // GPa
+  f: number; // kN por unidade de força
+  U: string;
   p: Parametros;
 }
 
@@ -29,7 +34,7 @@ export interface Exponencial {
 export const rExp = (e: Exponencial, Q: number) => (-Math.log(1 - Q / e.Qu) - e.beta) / e.alfa;
 export const QExp = (e: Exponencial, r: number) => e.Qu * (1 - Math.exp(-(e.alfa * r + e.beta)));
 
-export function criarContexto(ens: Ensaio, p: Parametros): Contexto {
+export function criarContexto(ens: Ensaio, p: Parametros, u: Unidade = UNIDADE_KN): Contexto {
   const pts = pontosCarregamento(ens);
   return {
     pts,
@@ -40,6 +45,8 @@ export function criarContexto(ens: Ensaio, p: Parametros): Contexto {
     L: ens.estaca.L,
     A: areaEstaca(ens),
     E: ens.estaca.E,
+    f: u.fator,
+    U: u.nome,
     p,
   };
 }
@@ -50,7 +57,7 @@ const ultimos = <T,>(arr: T[], n: number | null, padrao: number) => {
 };
 
 const tabelaPontos = (pts: Ponto[], extra?: { cab: string; f: (p: Ponto) => string }[]): Tabela => ({
-  cab: ['Estágio', 'Q (kN)', 'r (mm)', ...(extra ?? []).map((e) => e.cab)],
+  cab: ['Estágio', `Q (${U})`, 'r (mm)', ...(extra ?? []).map((e) => e.cab)],
   linhas: pts.map((p) => [String(p.n ?? '—'), fmt(p.Q, 1), fmt(p.r, 3), ...(extra ?? []).map((e) => e.f(p))]),
 });
 
@@ -139,14 +146,14 @@ function metodoVdV(ctx: Contexto, intercepto: boolean): { res: Resultado; exp: E
     },
     {
       titulo: 'Critério de escolha de Qu',
-      texto: `Foram testados ${v.candidatos.length} valores de Qu entre Qmáx = ${fmt(ctx.Qmax, 1)} kN e ${fmt(ctx.Qmax * 5, 0)} kN, com refinamento por seção áurea. Adota-se o Qu que fornece o maior coeficiente de determinação R² da reta.`,
+      texto: `Foram testados ${v.candidatos.length} valores de Qu entre Qmáx = ${fmt(ctx.Qmax, 1)} ${U} e ${fmt(ctx.Qmax * 5, 0)} ${U}, com refinamento por seção áurea. Adota-se o Qu que fornece o maior coeficiente de determinação R² da reta.`,
       tabela: {
-        cab: ['Qu (kN)', 'R²'],
+        cab: [`Qu (${U})`, 'R²'],
         linhas: amostraCandidatos(v, ctx.Qmax).map((c) => [fmt(c.Qu, 1), fmt(c.r2, 5)]),
       },
     },
     {
-      titulo: `Linearização para Qu = ${fmt(Qu, 1)} kN`,
+      titulo: `Linearização para Qu = ${fmt(Qu, 1)} ${U}`,
       tabela: tabelaPontos(ctx.pts, [
         { cab: 'Q/Qu', f: (p) => fmt(p.Q / Qu, 4) },
         { cab: '−ln(1 − Q/Qu)', f: (p) => fmt(-Math.log(1 - p.Q / Qu), 4) },
@@ -165,7 +172,7 @@ function metodoVdV(ctx: Contexto, intercepto: boolean): { res: Resultado; exp: E
         intercepto
           ? `Q = ${tx(Qu, 1)}\\left(1 - e^{-(${tx(alfa, 5)}\\, r ${beta >= 0 ? '+' : '-'} ${tx(Math.abs(beta), 5)})}\\right)`
           : `Q = ${tx(Qu, 1)}\\left(1 - e^{-${tx(alfa, 5)}\\, r}\\right)`,
-        `Q_u = ${tx(Qu, 1)}\\ \\text{kN} \\qquad \\dfrac{Q_{máx}}{Q_u} = ${tx(ctx.Qmax / Qu, 3)}`,
+        `Q_u = ${tx(Qu, 1)}\\ \\text{${U}} \\qquad \\dfrac{Q_{máx}}{Q_u} = ${tx(ctx.Qmax / Qu, 3)}`,
       ],
     },
   ];
@@ -211,7 +218,8 @@ function retaRuptura(
   ctx: Contexto, base: Exponencial | null, id: string, nome: string, ref: string,
   c: number, eqTex: string, cTex: string,
 ): Resultado {
-  const m = ctx.L / (ctx.A * ctx.E * 1000); // mm/kN
+  const Eu = (ctx.E * 1e6) / ctx.f; // módulo na unidade de força (U/m²)
+  const m = (ctx.L / (ctx.A * Eu)) * 1000; // mm por unidade de força
   const dados: Passo = {
     titulo: 'Dados da estaca',
     tabela: {
@@ -230,9 +238,9 @@ function retaRuptura(
     {
       titulo: 'Substituição',
       tex: [
-        `\\frac{L}{A\\,E} = \\frac{${tx(ctx.L, 2)}\\ \\text{m}}{${tx(ctx.A, 5)}\\ \\text{m}^2 \\times ${tx(ctx.E, 1)}\\times10^{6}\\ \\text{kN/m}^2} = ${tx(m, 6)}\\ \\text{mm/kN}`,
+        `\\frac{L}{A\\,E} = \\frac{${tx(ctx.L, 2)}\\ \\text{m}}{${tx(ctx.A, 5)}\\ \\text{m}^2 \\times ${tx(Eu, 0)}\\ \\text{${U}/m}^2} = ${tx(m, 6)}\\ \\text{mm/${U}}`,
         `${cTex} = ${tx(c, 3)}\\ \\text{mm}`,
-        `r = ${tx(c, 3)} + ${tx(m, 6)}\\,Q \\quad (\\text{mm; } Q \\text{ em kN})`,
+        `r = ${tx(c, 3)} + ${tx(m, 6)}\\,Q \\quad (\\text{mm; } Q \\text{ em ${U}})`,
       ],
     },
   ];
@@ -242,7 +250,7 @@ function retaRuptura(
     passos.push({
       titulo: 'Interseção com a curva medida',
       texto: 'A reta intercepta a curva carga × recalque medida.',
-      tex: [`Q_u = ${tx(pm.Q, 1)}\\ \\text{kN} \\qquad r_u = ${tx(pm.r, 2)}\\ \\text{mm}`],
+      tex: [`Q_u = ${tx(pm.Q, 1)}\\ \\text{${U}} \\qquad r_u = ${tx(pm.r, 2)}\\ \\text{mm}`],
     });
     return { id, nome, ref, categoria: 'convencional', Qu: pm.Q, ru: pm.r, fonte: 'curva medida', status: 'ok', passos, retaR };
   }
@@ -253,10 +261,10 @@ function retaRuptura(
   const Q = primeiraRaiz((q) => rExp(base, q) - retaR(q), 1e-9 * base.Qu, base.Qu * (1 - 1e-12));
   passos.push({
     titulo: `Interseção com a curva extrapolada (${base.nome})`,
-    texto: `A reta não intercepta a curva medida (ensaio até ${fmt(ctx.Qmax, 1)} kN). A interseção é obtida com a curva extrapolada por ${base.nome}, resolvendo numericamente:`,
+    texto: `A reta não intercepta a curva medida (ensaio até ${fmt(ctx.Qmax, 1)} ${U}). A interseção é obtida com a curva extrapolada por ${base.nome}, resolvendo numericamente:`,
     tex: [
       `\\frac{-\\ln(1 - Q/${tx(base.Qu, 1)}) - (${tx(base.beta, 5)})}{${tx(base.alfa, 5)}} = ${tx(c, 3)} + ${tx(m, 6)}\\,Q`,
-      Q ? `Q_u = ${tx(Q, 1)}\\ \\text{kN} \\qquad r_u = ${tx(retaR(Q), 2)}\\ \\text{mm}` : '\\text{sem solução}',
+      Q ? `Q_u = ${tx(Q, 1)}\\ \\text{${U}} \\qquad r_u = ${tx(retaR(Q), 2)}\\ \\text{mm}` : '\\text{sem solução}',
     ],
   });
   return {
@@ -276,7 +284,7 @@ function recalqueFixo(
   const passos = [...passosIni];
   const Qm = QdeR(ctx.pts, ru);
   if (Qm !== null) {
-    passos.push({ titulo: 'Carga correspondente (curva medida)', texto: 'Interpolação linear entre os estágios que contêm o recalque de ruptura.', tex: [`Q_u = Q(r = ${tx(ru, 2)}\\ \\text{mm}) = ${tx(Qm, 1)}\\ \\text{kN}`] });
+    passos.push({ titulo: 'Carga correspondente (curva medida)', texto: 'Interpolação linear entre os estágios que contêm o recalque de ruptura.', tex: [`Q_u = Q(r = ${tx(ru, 2)}\\ \\text{mm}) = ${tx(Qm, 1)}\\ \\text{${U}}`] });
     return { id, nome, ref, categoria: 'convencional', Qu: Qm, ru, fonte: 'curva medida', status: 'ok', passos, linhasR: linhas };
   }
   if (!base) {
@@ -287,7 +295,7 @@ function recalqueFixo(
   passos.push({
     titulo: `Carga correspondente (curva extrapolada — ${base.nome})`,
     texto: `O recalque máximo medido (${fmt(ctx.rmax, 2)} mm) é inferior a ${fmt(ru, 2)} mm; usa-se a curva extrapolada.`,
-    tex: [`Q_u = ${tx(base.Qu, 1)}\\left(1 - e^{-(${tx(base.alfa, 5)}\\times ${tx(ru, 2)} ${base.beta >= 0 ? '+' : '-'} ${tx(Math.abs(base.beta), 5)})}\\right) = ${tx(Q, 1)}\\ \\text{kN}`],
+    tex: [`Q_u = ${tx(base.Qu, 1)}\\left(1 - e^{-(${tx(base.alfa, 5)}\\times ${tx(ru, 2)} ${base.beta >= 0 ? '+' : '-'} ${tx(Math.abs(base.beta), 5)})}\\right) = ${tx(Q, 1)}\\ \\text{${U}}`],
   });
   return {
     id, nome, ref, categoria: 'convencional', Qu: Q, ru, fonte: 'curva extrapolada', status: 'ok',
@@ -309,7 +317,7 @@ function metodoChin(ctx: Contexto): Resultado {
     { titulo: 'Equação do método', tex: ['\\frac{r}{Q} = C_1\\, r + C_2', 'Q_u = \\frac{1}{C_1}'], texto: 'Curva carga × recalque hiperbólica; Qu é a assíntota (r → ∞).' },
     {
       titulo: `Pontos usados no ajuste (${usados.length} últimos estágios)`,
-      tabela: tabelaPontos(usados, [{ cab: 'r/Q (mm/kN)', f: (p) => fmtSci(p.r / p.Q, 6) }]),
+      tabela: tabelaPontos(usados, [{ cab: `r/Q (mm/${U})`, f: (p) => fmtSci(p.r / p.Q, 6) }]),
     },
     passoRegressao(aj, '\\frac{r}{Q}', 'r', 'C_2', 'C_1'),
   ];
@@ -318,14 +326,14 @@ function metodoChin(ctx: Contexto): Resultado {
     return { id, nome, ref, categoria: 'extrapolacao', Qu: null, ru: null, status: 'invalido', aviso: 'C1 ≤ 0', passos, R2: aj.r2 };
   }
   const Qu = 1 / C1;
-  passos.push({ titulo: 'Resultado', tex: [`Q_u = \\frac{1}{${tx(C1, 6)}} = ${tx(Qu, 1)}\\ \\text{kN}`, `\\dfrac{Q_{máx}}{Q_u} = ${tx(ctx.Qmax / Qu, 3)}`] });
+  passos.push({ titulo: 'Resultado', tex: [`Q_u = \\frac{1}{${tx(C1, 6)}} = ${tx(Qu, 1)}\\ \\text{${U}}`, `\\dfrac{Q_{máx}}{Q_u} = ${tx(ctx.Qmax / Qu, 3)}`] });
   const rs = ctx.pts.map((p) => p.r);
   const rl = [0, ctx.rmax * 1.05];
   return {
     id, nome, ref, categoria: 'extrapolacao', Qu, ru: null, fonte: 'ajuste', status: 'ok', R2: aj.r2, passos,
     curvaQ: (r) => r / (C1 * r + C2),
     aux: {
-      titulo: 'Chin-Kondner: r/Q × r', xLabel: 'Recalque r (mm)', yLabel: 'r/Q (mm/kN)',
+      titulo: 'Chin-Kondner: r/Q × r', xLabel: 'Recalque r (mm)', yLabel: `r/Q (mm/${U})`,
       series: [
         { nome: 'Estágios', x: rs, y: ctx.pts.map((p) => p.r / p.Q), modo: 'markers' },
         { nome: 'Usados no ajuste', x: usados.map((p) => p.r), y: usados.map((p) => p.r / p.Q), modo: 'markers' },
@@ -348,7 +356,7 @@ function metodoDecourt(ctx: Contexto): Resultado {
   const a = aj.a, b = aj.b;
   const passos: Passo[] = [
     { titulo: 'Equação do método', tex: ['K = \\frac{Q}{r}', 'K = a + b\\,Q', 'Q_u = -\\frac{a}{b} \\quad (K = 0)'], texto: 'Rigidez K de cada estágio em função da carga; a ruptura física corresponde à rigidez nula.' },
-    { titulo: `Pontos usados no ajuste (${usados.length} últimos estágios)`, tabela: tabelaPontos(usados, [{ cab: 'K = Q/r (kN/mm)', f: (p) => fmt(p.Q / p.r, 2) }]) },
+    { titulo: `Pontos usados no ajuste (${usados.length} últimos estágios)`, tabela: tabelaPontos(usados, [{ cab: `K = Q/r (${U}/mm)`, f: (p) => fmt(p.Q / p.r, 2) }]) },
     passoRegressao(aj, 'K', 'Q'),
   ];
   if (!(b < 0)) {
@@ -356,12 +364,12 @@ function metodoDecourt(ctx: Contexto): Resultado {
     return { id, nome, ref, categoria: 'extrapolacao', Qu: null, ru: null, status: 'invalido', aviso: 'Rigidez não decrescente', passos, R2: aj.r2 };
   }
   const Qu = -a / b;
-  passos.push({ titulo: 'Resultado', tex: [`Q_u = -\\frac{${tx(a, 4)}}{${tx(b, 6)}} = ${tx(Qu, 1)}\\ \\text{kN}`, `\\dfrac{Q_{máx}}{Q_u} = ${tx(ctx.Qmax / Qu, 3)}`] });
+  passos.push({ titulo: 'Resultado', tex: [`Q_u = -\\frac{${tx(a, 4)}}{${tx(b, 6)}} = ${tx(Qu, 1)}\\ \\text{${U}}`, `\\dfrac{Q_{máx}}{Q_u} = ${tx(ctx.Qmax / Qu, 3)}`] });
   return {
     id, nome, ref, categoria: 'extrapolacao', Qu, ru: null, fonte: 'ajuste', status: 'ok', R2: aj.r2, passos,
     curvaQ: (r) => (a * r) / (1 - b * r),
     aux: {
-      titulo: 'Décourt: rigidez K × carga Q', xLabel: 'Carga Q (kN)', yLabel: 'Rigidez K = Q/r (kN/mm)',
+      titulo: 'Décourt: rigidez K × carga Q', xLabel: `Carga Q (${U})`, yLabel: `Rigidez K = Q/r (${U}/mm)`,
       series: [
         { nome: 'Estágios', x: pts.map((p) => p.Q), y: pts.map((p) => p.Q / p.r), modo: 'markers' },
         { nome: 'Usados no ajuste', x: usados.map((p) => p.Q), y: usados.map((p) => p.Q / p.r), modo: 'markers' },
@@ -400,8 +408,8 @@ function metodoMazurkiewicz(ctx: Contexto): Resultado {
       texto: 'Escolhem-se recalques igualmente espaçados e leem-se as cargas correspondentes na curva. De cada carga Q(k) no eixo traça-se uma reta a 45° até a vertical de Q(k+1); os pontos obtidos, de coordenadas (Q(k+1), ΔQ), alinham-se numa reta cuja interseção com o eixo das cargas (ΔQ = 0) fornece Qu.',
       tex: [`\\Delta r = \\frac{r_{máx}}{n} = \\frac{${tx(ctx.rmax, 3)}}{${serie.length}} = ${tx(dr, 4)}\\ \\text{mm}`, '\\Delta Q_k = Q_{k+1} - Q_k = a + b\\,Q_{k+1}', 'Q_u = -\\frac{a}{b}'],
     },
-    { titulo: 'Cargas para recalques igualmente espaçados', tabela: { cab: ['k', 'r (mm)', 'Q (kN)'], linhas: serie.map((s) => [String(s.i), fmt(s.r, 3), fmt(s.Q, 1)]) } },
-    { titulo: `Pares usados no ajuste (${usados.length})`, tabela: { cab: ['Q(k) (kN)', 'Q(k+1) (kN)', 'ΔQ (kN)'], linhas: usados.map((p) => [fmt(p.Qk, 1), fmt(p.Qk1, 1), fmt(p.dQ, 1)]) } },
+    { titulo: 'Cargas para recalques igualmente espaçados', tabela: { cab: ['k', 'r (mm)', `Q (${U})`], linhas: serie.map((s) => [String(s.i), fmt(s.r, 3), fmt(s.Q, 1)]) } },
+    { titulo: `Pares usados no ajuste (${usados.length})`, tabela: { cab: [`Q(k) (${U})`, `Q(k+1) (${U})`, `ΔQ (${U})`], linhas: usados.map((p) => [fmt(p.Qk, 1), fmt(p.Qk1, 1), fmt(p.dQ, 1)]) } },
     passoRegressao(aj, '\\Delta Q', 'Q_{k+1}'),
   ];
   if (!(aj.b < 0)) {
@@ -409,11 +417,11 @@ function metodoMazurkiewicz(ctx: Contexto): Resultado {
     return { id, nome, ref, categoria: 'extrapolacao', Qu: null, ru: null, status: 'invalido', aviso: 'Incrementos não decrescentes', passos, R2: aj.r2 };
   }
   const Qu = -aj.a / aj.b;
-  passos.push({ titulo: 'Resultado', tex: [`Q_u = -\\frac{${tx(aj.a, 3)}}{${tx(aj.b, 5)}} = ${tx(Qu, 1)}\\ \\text{kN}`] });
+  passos.push({ titulo: 'Resultado', tex: [`Q_u = -\\frac{${tx(aj.a, 3)}}{${tx(aj.b, 5)}} = ${tx(Qu, 1)}\\ \\text{${U}}`] });
   return {
     id, nome, ref, categoria: 'extrapolacao', Qu, ru: null, fonte: 'ajuste', status: 'ok', R2: aj.r2, passos,
     aux: {
-      titulo: 'Mazurkiewicz: ΔQ × Q(k+1)', xLabel: 'Q(k+1) (kN)', yLabel: 'ΔQ = Q(k+1) − Q(k) (kN)',
+      titulo: 'Mazurkiewicz: ΔQ × Q(k+1)', xLabel: `Q(k+1) (${U})`, yLabel: `ΔQ = Q(k+1) − Q(k) (${U})`,
       series: [
         { nome: 'Pares', x: pares.map((p) => p.Qk1), y: pares.map((p) => p.dQ), modo: 'markers' },
         { nome: 'Reta ajustada', x: [usados[0].Qk1, Qu], y: [aj.a + aj.b * usados[0].Qk1, 0], modo: 'lines', tracejado: true },
@@ -435,7 +443,7 @@ function metodoMassad(ctx: Contexto): Resultado {
       texto: 'Formalização algébrica do procedimento de Mazurkiewicz, com recalques igualmente espaçados; equivalente ao método de Van der Veen.',
       tex: [`\\Delta r = ${tx(dr, 4)}\\ \\text{mm}`, 'Q_{k+1} = a + b\\,Q_k', 'Q_u = \\frac{a}{1 - b} \\quad (\\text{interseção com } Q_{k+1} = Q_k)'],
     },
-    { titulo: `Pares usados (${usados.length})`, tabela: { cab: ['Q(k) (kN)', 'Q(k+1) (kN)'], linhas: usados.map((p) => [fmt(p.Qk, 1), fmt(p.Qk1, 1)]) } },
+    { titulo: `Pares usados (${usados.length})`, tabela: { cab: [`Q(k) (${U})`, `Q(k+1) (${U})`], linhas: usados.map((p) => [fmt(p.Qk, 1), fmt(p.Qk1, 1)]) } },
     passoRegressao(aj, 'Q_{k+1}', 'Q_k'),
   ];
   if (!(aj.b < 1 && aj.b > 0)) {
@@ -443,11 +451,11 @@ function metodoMassad(ctx: Contexto): Resultado {
     return { id, nome, ref, categoria: 'extrapolacao', Qu: null, ru: null, status: 'invalido', aviso: 'b fora de (0,1)', passos, R2: aj.r2 };
   }
   const Qu = aj.a / (1 - aj.b);
-  passos.push({ titulo: 'Resultado', tex: [`Q_u = \\frac{${tx(aj.a, 3)}}{1 - ${tx(aj.b, 5)}} = ${tx(Qu, 1)}\\ \\text{kN}`] });
+  passos.push({ titulo: 'Resultado', tex: [`Q_u = \\frac{${tx(aj.a, 3)}}{1 - ${tx(aj.b, 5)}} = ${tx(Qu, 1)}\\ \\text{${U}}`] });
   return {
     id, nome, ref, categoria: 'extrapolacao', Qu, ru: null, fonte: 'ajuste', status: 'ok', R2: aj.r2, passos,
     aux: {
-      titulo: 'Massad: Q(k+1) × Q(k)', xLabel: 'Q(k) (kN)', yLabel: 'Q(k+1) (kN)',
+      titulo: 'Massad: Q(k+1) × Q(k)', xLabel: `Q(k) (${U})`, yLabel: `Q(k+1) (${U})`,
       series: [
         { nome: 'Pares', x: pares.map((p) => p.Qk), y: pares.map((p) => p.Qk1), modo: 'markers' },
         { nome: 'Reta ajustada', x: [0, Qu], y: [aj.a, Qu], modo: 'lines', tracejado: true },
@@ -486,9 +494,9 @@ function metodoBH80(ctx: Contexto): Resultado {
   passos.push({
     titulo: 'Resultado',
     tex: [
-      `Q_u = \\frac{1}{2\\sqrt{${tx(C1, 6)} \\times ${tx(C2, 6)}}} = ${tx(Qu, 1)}\\ \\text{kN}`,
+      `Q_u = \\frac{1}{2\\sqrt{${tx(C1, 6)} \\times ${tx(C2, 6)}}} = ${tx(Qu, 1)}\\ \\text{${U}}`,
       `r_u = \\frac{${tx(C2, 6)}}{${tx(C1, 6)}} = ${tx(ru, 2)}\\ \\text{mm}`,
-      `\\text{Verificação: } Q(r_u/4) = ${tx(Math.sqrt(ru / 4) / (C1 * ru / 4 + C2), 1)}\\ \\text{kN} = 0{,}8\\,Q_u`,
+      `\\text{Verificação: } Q(r_u/4) = ${tx(Math.sqrt(ru / 4) / (C1 * ru / 4 + C2), 1)}\\ \\text{${U}} = 0{,}8\\,Q_u`,
     ],
   });
   const rl = [0, Math.max(ctx.rmax, ru) * 1.05];
@@ -515,7 +523,7 @@ function metodoBH90(ctx: Contexto, base: Exponencial | null): Resultado {
   const Qm = primeiraRaiz(f, ctx.Qmax * 0.05, ctx.Qmax);
   if (Qm !== null) {
     const r = rDeQ(ctx.pts, Qm)!;
-    passos.push({ titulo: 'Solução na curva medida', tex: [`Q_u = ${tx(Qm, 1)}\\ \\text{kN} \\qquad r(Q_u) = ${tx(r, 2)}\\ \\text{mm} \\qquad r(0{,}9Q_u) = ${tx(rDeQ(ctx.pts, 0.9 * Qm), 2)}\\ \\text{mm}`] });
+    passos.push({ titulo: 'Solução na curva medida', tex: [`Q_u = ${tx(Qm, 1)}\\ \\text{${U}} \\qquad r(Q_u) = ${tx(r, 2)}\\ \\text{mm} \\qquad r(0{,}9Q_u) = ${tx(rDeQ(ctx.pts, 0.9 * Qm), 2)}\\ \\text{mm}`] });
     return { id, nome, ref, categoria: 'convencional', Qu: Qm, ru: r, fonte: 'curva medida', status: 'ok', passos };
   }
   if (!base) {
@@ -530,7 +538,7 @@ function metodoBH90(ctx: Contexto, base: Exponencial | null): Resultado {
   }
   passos.push({
     titulo: `Solução na curva extrapolada (${base.nome})`,
-    tex: [`Q_u = ${tx(Q, 1)}\\ \\text{kN} \\qquad r(Q_u) = ${tx(rExp(base, Q), 2)}\\ \\text{mm} \\qquad r(0{,}9Q_u) = ${tx(rExp(base, 0.9 * Q), 2)}\\ \\text{mm}`],
+    tex: [`Q_u = ${tx(Q, 1)}\\ \\text{${U}} \\qquad r(Q_u) = ${tx(rExp(base, Q), 2)}\\ \\text{mm} \\qquad r(0{,}9Q_u) = ${tx(rExp(base, 0.9 * Q), 2)}\\ \\text{mm}`],
   });
   return { id, nome, ref, categoria: 'convencional', Qu: Q, ru: rExp(base, Q), fonte: 'curva extrapolada', status: 'ok', aviso: 'Resultado obtido sobre a curva extrapolada.', passos };
 }
@@ -558,9 +566,9 @@ function pontoTangente(ctx: Contexto, base: Exponencial | null, S: number): { Q:
 
 function metodoFullerHoy(ctx: Contexto, base: Exponencial | null): Resultado {
   const id = 'fullerhoy', nome = 'Fuller & Hoy (1970)', ref = 'Fuller & Hoy (1970)';
-  const S = ctx.p.hoySlope;
+  const S = ctx.p.hoySlope * ctx.f;
   const passos: Passo[] = [
-    { titulo: 'Critério', texto: 'Qu é a carga em que a tangente à curva carga × recalque atinge a inclinação de 0,05 in/ton.', tex: [`\\frac{dr}{dQ} = ${tx(S, 3)}\\ \\text{mm/kN}`] },
+    { titulo: 'Critério', texto: 'Qu é a carga em que a tangente à curva carga × recalque atinge a inclinação de 0,05 in/ton.', tex: [`\\frac{dr}{dQ} = ${tx(S, 3)}\\ \\text{mm/${U}}`] },
   ];
   const t = pontoTangente(ctx, base, S);
   if (!t) {
@@ -570,20 +578,20 @@ function metodoFullerHoy(ctx: Contexto, base: Exponencial | null): Resultado {
   passos.push({
     titulo: t.fonte === 'curva medida' ? 'Ponto de tangência (curva medida)' : `Ponto de tangência (curva extrapolada — ${base!.nome})`,
     texto: t.fonte === 'curva medida' ? 'Inclinações dos trechos entre estágios interpoladas linearmente em função da carga média do trecho.' : 'Na curva exponencial, dr/dQ = 1/[α(Qu − Q)].',
-    tex: t.fonte === 'curva medida' ? [`Q_u = ${tx(t.Q, 1)}\\ \\text{kN} \\qquad r = ${tx(t.r, 2)}\\ \\text{mm}`] : [`Q = Q_u - \\frac{1}{\\alpha S} = ${tx(base!.Qu, 1)} - \\frac{1}{${tx(base!.alfa, 5)}\\times${tx(S, 3)}} = ${tx(t.Q, 1)}\\ \\text{kN}`],
+    tex: t.fonte === 'curva medida' ? [`Q_u = ${tx(t.Q, 1)}\\ \\text{${U}} \\qquad r = ${tx(t.r, 2)}\\ \\text{mm}`] : [`Q = Q_u - \\frac{1}{\\alpha S} = ${tx(base!.Qu, 1)} - \\frac{1}{${tx(base!.alfa, 5)}\\times${tx(S, 3)}} = ${tx(t.Q, 1)}\\ \\text{${U}}`],
   });
   return { id, nome, ref, categoria: 'convencional', Qu: t.Q, ru: t.r, fonte: t.fonte, status: 'ok', aviso: t.fonte === 'curva extrapolada' ? 'Resultado obtido sobre a curva extrapolada.' : undefined, passos };
 }
 
 function metodoButlerHoy(ctx: Contexto, base: Exponencial | null): Resultado {
   const id = 'butlerhoy', nome = 'Butler & Hoy (1977)', ref = 'Butler & Hoy (1977)';
-  const S = ctx.p.hoySlope;
+  const S = ctx.p.hoySlope * ctx.f;
   const ini = ctx.pts.slice(0, Math.max(1, ctx.p.nInicialButler));
   if (ini.length < 1) return vazio(id, nome, ref, 'convencional', 'Pontos insuficientes.');
   const k = ajusteOrigem(ini.map((p) => p.Q), ini.map((p) => p.r)).b;
   const passos: Passo[] = [
-    { titulo: 'Critério', texto: 'Qu é a interseção da tangente ao trecho inicial com a tangente à curva de inclinação 0,05 in/ton (1 in / 20 ton).', tex: ['r = k\\,Q \\quad (\\text{tangente inicial})', `r = r^* + S\\,(Q - Q^*) \\quad S = ${tx(S, 3)}\\ \\text{mm/kN}`, 'Q_u = \\frac{r^* - S\\,Q^*}{k - S}'] },
-    { titulo: `Tangente inicial (${ini.length} primeiros estágios, pela origem)`, tex: [`k = ${tx(k, 6)}\\ \\text{mm/kN}`] },
+    { titulo: 'Critério', texto: 'Qu é a interseção da tangente ao trecho inicial com a tangente à curva de inclinação 0,05 in/ton (1 in / 20 ton).', tex: ['r = k\\,Q \\quad (\\text{tangente inicial})', `r = r^* + S\\,(Q - Q^*) \\quad S = ${tx(S, 3)}\\ \\text{mm/${U}}`, 'Q_u = \\frac{r^* - S\\,Q^*}{k - S}'] },
+    { titulo: `Tangente inicial (${ini.length} primeiros estágios, pela origem)`, tex: [`k = ${tx(k, 6)}\\ \\text{mm/${U}}`] },
   ];
   const t = pontoTangente(ctx, base, S);
   if (!t || !(k < S)) {
@@ -593,7 +601,7 @@ function metodoButlerHoy(ctx: Contexto, base: Exponencial | null): Resultado {
   const Qu = (t.r - S * t.Q) / (k - S);
   passos.push({
     titulo: `Ponto de tangência (${t.fonte})`,
-    tex: [`Q^* = ${tx(t.Q, 1)}\\ \\text{kN} \\qquad r^* = ${tx(t.r, 2)}\\ \\text{mm}`, `Q_u = \\frac{${tx(t.r, 2)} - ${tx(S, 3)}\\times${tx(t.Q, 1)}}{${tx(k, 6)} - ${tx(S, 3)}} = ${tx(Qu, 1)}\\ \\text{kN}`],
+    tex: [`Q^* = ${tx(t.Q, 1)}\\ \\text{${U}} \\qquad r^* = ${tx(t.r, 2)}\\ \\text{mm}`, `Q_u = \\frac{${tx(t.r, 2)} - ${tx(S, 3)}\\times${tx(t.Q, 1)}}{${tx(k, 6)} - ${tx(S, 3)}} = ${tx(Qu, 1)}\\ \\text{${U}}`],
   });
   return { id, nome, ref, categoria: 'convencional', Qu, ru: k * Qu, fonte: t.fonte, status: 'ok', aviso: t.fonte === 'curva extrapolada' ? 'Tangência obtida sobre a curva extrapolada.' : undefined, passos };
 }
@@ -628,13 +636,13 @@ function metodoDeBeer(ctx: Contexto): Resultado {
   }
   const lx = (a2.a - a1.a) / (a1.b - a2.b);
   const Qu = 10 ** lx, ru = 10 ** (a1.a + a1.b * lx);
-  passos.push({ titulo: 'Resultado', tex: [`\\log Q_u = \\frac{${tx(a2.a, 4)} - (${tx(a1.a, 4)})}{${tx(a1.b, 4)} - ${tx(a2.b, 4)}} = ${tx(lx, 4)}`, `Q_u = ${tx(Qu, 1)}\\ \\text{kN} \\qquad r_u = ${tx(ru, 2)}\\ \\text{mm}`] });
+  passos.push({ titulo: 'Resultado', tex: [`\\log Q_u = \\frac{${tx(a2.a, 4)} - (${tx(a1.a, 4)})}{${tx(a1.b, 4)} - ${tx(a2.b, 4)}} = ${tx(lx, 4)}`, `Q_u = ${tx(Qu, 1)}\\ \\text{${U}} \\qquad r_u = ${tx(ru, 2)}\\ \\text{mm}`] });
   const ext = (aj: Ajuste, x0: number, x1: number) => ({ x: [10 ** x0, 10 ** x1], y: [10 ** (aj.a + aj.b * x0), 10 ** (aj.a + aj.b * x1)] });
   const l1 = ext(a1, X[0], Math.max(lx, X[k - 1])), l2 = ext(a2, Math.min(lx, X[k]), X[X.length - 1]);
   return {
     id, nome, ref, categoria: 'convencional', Qu, ru, fonte: 'curva medida', status: 'ok', passos,
     aux: {
-      titulo: 'De Beer: log r × log Q', xLabel: 'Carga Q (kN)', yLabel: 'Recalque r (mm)', logX: true, logY: true,
+      titulo: 'De Beer: log r × log Q', xLabel: `Carga Q (${U})`, yLabel: 'Recalque r (mm)', logX: true, logY: true,
       series: [
         { nome: 'Estágios', x: pts.map((p) => p.Q), y: pts.map((p) => p.r), modo: 'markers' },
         { nome: 'Trecho 1', ...l1, modo: 'lines', tracejado: true },
@@ -655,8 +663,10 @@ export interface Interpretacao {
   varreduras: { vdv: Varredura | null; aoki: Varredura | null };
 }
 
-export function interpretar(ens: Ensaio, p: Parametros): Interpretacao {
-  const ctx = criarContexto(ens, p);
+/** `ens` deve estar na unidade de força `u` (ver ensaioNaUnidade). */
+export function interpretar(ens: Ensaio, p: Parametros, u: Unidade = UNIDADE_KN): Interpretacao {
+  U = u.nome;
+  const ctx = criarContexto(ens, p, u);
   const vdv = metodoVdV(ctx, false);
   const aoki = metodoVdV(ctx, true);
   const base = p.extrapBase === 'aoki' ? aoki.exp : vdv.exp;

@@ -17,6 +17,7 @@ Pares campo × valor (coluna A = campo, coluna B = valor, coluna C = unidade).
 | Cota de arrasamento / execução | não | m | |
 | Cota da ponta | não | m | |
 | Módulo E | não | GPa | se vazio, usa 20 GPa (editável no app) |
+| Unidade de carga | recomendado | — | `kN` ou `tf`; também detectada no cabeçalho da coluna de carga, ex.: `Carga (tf)` |
 | Carga de trabalho estimada (Qt) | recomendado | kN | define a escala 20° ± 5°; se vazio, sugere Qmáx/2 |
 | Diâmetro da ponta | não | mm | Terzaghi 10 % D; se vazio, usa D |
 | Tipo de carregamento | sim | — | lento / rápido / misto |
@@ -33,6 +34,7 @@ Uma linha por estágio, com a **leitura inicial e a final** de cada estágio (ex
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 - `Fase`: `C` (carregamento) ou `D` (descarregamento).
+- Carga em **kN ou tf**: a unidade é lida do cabeçalho (`Carga (kN)` / `Carga (tf)`) ou do campo "Unidade de carga". Sem indicação, assume kN (com aviso). A unidade de exibição é escolhida no app, com conversão 1 tf = 9,80665 kN (padrão) ou 10 kN (aproximação).
 - Leituras em mm, como deslocamento acumulado (positivo para baixo). Número de relógios variável (≥ 1).
 - Média dos relógios calculada pelo app para leitura inicial e final.
 

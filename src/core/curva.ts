@@ -1,4 +1,22 @@
-import type { Ensaio, Estagio, Ponto } from './types';
+import type { Ensaio, Estagio, NomeUnidade, Ponto } from './types';
+
+/** Fator multiplicativo para converter forças de `de` para `para`. */
+export function fatorConversao(de: NomeUnidade, para: NomeUnidade, fatorTf: number): number {
+  if (de === para) return 1;
+  return de === 'tf' ? fatorTf : 1 / fatorTf;
+}
+
+/** Cópia do ensaio com as forças convertidas da unidade de origem para `para`. */
+export function ensaioNaUnidade(ens: Ensaio, para: NomeUnidade, fatorTf: number): Ensaio {
+  const k = fatorConversao(ens.unidadeOrigem, para, fatorTf);
+  if (k === 1) return ens;
+  return {
+    ...ens,
+    unidadeOrigem: para,
+    estaca: { ...ens.estaca, Qt: ens.estaca.Qt === null ? null : ens.estaca.Qt * k },
+    estagios: ens.estagios.map((s) => ({ ...s, Q: s.Q * k })),
+  };
+}
 
 export function media(vals: (number | null)[], ativos: boolean[]): number | null {
   let s = 0, k = 0;

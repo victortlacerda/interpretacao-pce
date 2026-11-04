@@ -12,8 +12,9 @@ import { tx } from '../core/formato';
 
 export function PassoMemoria({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio; interp: Interpretacao; vis: Visual; visiveis: Set<string> }) {
   const est = ensaio.estaca;
+  const U = interp.ctx.U;
   const figCR = useMemo(() => (vis.escala ? figuraCargaRecalque(ensaio, interp, vis, visiveis) : null), [ensaio, interp, vis, visiveis]);
-  const figTR = useMemo(() => (vis.escala ? figuraTempoRecalque(ensaio, vis) : null), [ensaio, vis]);
+  const figTR = useMemo(() => (vis.escala ? figuraTempoRecalque(ensaio, vis, U) : null), [ensaio, vis]);
   const e = vis.escala;
 
   return (
@@ -36,7 +37,7 @@ export function PassoMemoria({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio
           <div><span>Comprimento L</span><b>{fmt(est.L, 2)} m</b></div>
           <div><span>Área A</span><b>{fmt(areaEstaca(ensaio), 5)} m²</b></div>
           <div><span>Módulo E</span><b>{fmt(est.E, 1)} GPa</b></div>
-          <div><span>Carga de trabalho estimada</span><b>{fmt(vis.Qt, 1)} kN{vis.QtSugerido ? ' (sugerida)' : ''}</b></div>
+          <div><span>Carga de trabalho estimada</span><b>{fmt(vis.Qt, 1)} {U}{vis.QtSugerido ? ' (sugerida)' : ''}</b></div>
           <div><span>Cota de arrasamento</span><b>{est.cotaArrasamento || '—'}</b></div>
           <div><span>Cota da ponta</span><b>{est.cotaPonta || '—'}</b></div>
           <div><span>Carregamento</span><b>{est.tipoCarregamento || '—'}</b></div>
@@ -52,7 +53,7 @@ export function PassoMemoria({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio
         <Tex>{'\\bar r = \\frac{1}{n}\\sum_{i=1}^{n} r_i'}</Tex>
         <div className="tabela-rolagem">
           <table className="tabela tabela--compacta">
-            <thead><tr><th>Estágio</th><th>Fase</th><th>Q (kN)</th><th>Início</th><th>Fim</th><th>r inicial (mm)</th><th>r final (mm)</th><th>Δr no estágio (mm)</th></tr></thead>
+            <thead><tr><th>Estágio</th><th>Fase</th><th>Q ({U})</th><th>Início</th><th>Fim</th><th>r inicial (mm)</th><th>r final (mm)</th><th>Δr no estágio (mm)</th></tr></thead>
             <tbody>
               {ensaio.estagios.filter((s) => s.incluir).map((s) => {
                 const a = media(s.rIni, ensaio.relogioAtivo), b = media(s.rFim, ensaio.relogioAtivo);
@@ -73,8 +74,8 @@ export function PassoMemoria({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio
             Curvas carga × deslocamento e tempo × deslocamento com a carga e o deslocamento da leitura inicial e final de cada estágio, em escala tal que a reta que liga a
             origem ao ponto da curva correspondente à carga estimada de trabalho resulte em inclinação de 20° ± 5° com o eixo das cargas.
           </p>
-          <Tex>{`r_t = r(Q_t = ${tx(vis.Qt, 1)}\\ \\text{kN}) = ${tx(vis.rt, 3)}\\ \\text{mm}`}</Tex>
-          <Tex>{`s_Q = ${tx(e.sQ, 0)}\\ \\text{kN/cm} \\qquad s_r = ${tx(e.sR, 2)}\\ \\text{mm/cm}`}</Tex>
+          <Tex>{`r_t = r(Q_t = ${tx(vis.Qt, 1)}\\ \\text{${U}}) = ${tx(vis.rt, 3)}\\ \\text{mm}`}</Tex>
+          <Tex>{`s_Q = ${tx(e.sQ, 0)}\\ \\text{${U}/cm} \\qquad s_r = ${tx(e.sR, 2)}\\ \\text{mm/cm}`}</Tex>
           <Tex>{`\\theta = \\arctan\\!\\left(\\frac{r_t / s_r}{Q_t / s_Q}\\right) = \\arctan\\!\\left(\\frac{${tx(vis.rt! / e.sR, 3)}\\ \\text{cm}}{${tx(vis.Qt! / e.sQ, 3)}\\ \\text{cm}}\\right) = ${tx(e.angulo, 1)}^\\circ \\quad ${e.anguloOk ? '\\in [15^\\circ;\\,25^\\circ]\\ \\checkmark' : '\\notin [15^\\circ;\\,25^\\circ]'}`}</Tex>
         </div>
       )}
@@ -85,7 +86,7 @@ export function PassoMemoria({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio
       <div className="cartao">
         <h2>3. Resumo</h2>
         <table className="tabela tabela--compacta">
-          <thead><tr><th>Método</th><th>Qu (kN)</th><th>r (mm)</th><th>Obtido sobre</th><th>Situação</th></tr></thead>
+          <thead><tr><th>Método</th><th>Qu ({U})</th><th>r (mm)</th><th>Obtido sobre</th><th>Situação</th></tr></thead>
           <tbody>
             {interp.resultados.map((r) => (
               <tr key={r.id}><td>{r.nome}</td><td className="num forte">{fmt(r.Qu, 1)}</td><td className="num">{fmt(r.ru, 2)}</td><td>{r.fonte ?? '—'}</td><td>{STATUS_TXT[r.status]}</td></tr>
@@ -115,7 +116,7 @@ function MetodoMemoria({ n, r, interp }: { n: number; r: Interpretacao['resultad
       {aux && <Grafico {...aux} altura={340} nomeArquivo={`metodo-${r.id}`} titulo={r.aux!.titulo} />}
       {r2 && <Grafico {...r2} altura={260} nomeArquivo={`r2-${r.id}`} titulo="R² em função do Qu testado" />}
       <div className="resultado-final">
-        Resultado: <b>{r.Qu !== null ? `Qu = ${fmt(r.Qu, 1)} kN` : STATUS_TXT[r.status]}</b>
+        Resultado: <b>{r.Qu !== null ? `Qu = ${fmt(r.Qu, 1)} ${interp.ctx.U}` : STATUS_TXT[r.status]}</b>
         {r.ru !== null && r.Qu !== null && <> · r = {fmt(r.ru, 2)} mm</>}
         {r.fonte && <> · obtido sobre {r.fonte}</>}
       </div>
