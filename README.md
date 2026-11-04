@@ -2,7 +2,21 @@
 
 Aplicativo para **interpretação de provas de carga estática (PCE) em estacas**: importa a planilha do ensaio, calcula a curva carga × recalque a partir das leituras dos relógios, plota os gráficos e determina a carga de ruptura por métodos de extrapolação e critérios de ruptura convencional (NBR 6122, Van der Veen/Aoki, Davisson, Décourt, Chin etc.).
 
-> **Status:** fase de planejamento. Ideias, funcionalidades e métodos estão sendo propostos e validados antes da implementação.
+> **Status:** v0.1 — 🌐 **https://victortlacerda.github.io/interpretacao-pce/**
+> Formulações em validação com a bibliografia de referência.
+
+## Desenvolvimento
+
+```bash
+npm install
+npm run dev     # servidor local
+npm test        # testes do núcleo de cálculo
+npm run build   # gera dist/
+```
+
+Cada push na `main` roda os testes, gera o build e publica na branch `gh-pages` (GitHub Actions).
+
+Estrutura: `src/core` (cálculo, sem dependência de interface) · `src/ui` (telas e gráficos).
 
 ## Documentos
 

@@ -1,5 +1,7 @@
 # Roadmap
 
+**Versão atual: v0.1** — app publicado em https://victortlacerda.github.io/interpretacao-pce/
+
 Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · 🔴 reprovado
 
 ## Fase 0 — Planejamento e validação técnica *(atual)*
@@ -20,30 +22,32 @@ Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · �
 - [ ] Reunir 2–3 ensaios reais com resultado conhecido para servir de casos de teste
 
 ## Fase 1 — Núcleo de cálculo (MVP técnico)
-- [ ] Leitura da planilha-modelo e cálculo da média dos relógios
-- [ ] Ruptura convencional NBR 6122
-- [ ] Van der Veen / Van der Veen–Aoki
-- [ ] Davisson
-- [ ] Testes automatizados com exemplos da bibliografia (tolerância numérica definida)
+- [x] Leitura da planilha-modelo e cálculo da média dos relógios
+- [x] Ruptura convencional NBR 6122
+- [x] Van der Veen / Van der Veen–Aoki
+- [x] Davisson
+- [x] Testes automatizados com curvas sintéticas de solução conhecida
+- [ ] Testes com exemplos da bibliografia do usuário
 
 ## Fase 2 — Interface e gráficos (MVP utilizável)
-- [ ] Fluxo Importar → Conferir → Interpretar → Relatório
-- [ ] Gráfico carga × deslocamento (leitura inicial e final por estágio) com **escala automática 20° ± 5°**
-- [ ] Gráfico tempo × deslocamento
-- [ ] Sobreposição de retas de ruptura e curvas extrapoladas
-- [ ] Tabela editável de estágios, alertas de dispersão
-- [ ] Publicação no GitHub Pages
+- [x] Fluxo Importar → Conferir → Interpretar → Relatório
+- [x] Gráfico carga × deslocamento (leitura inicial e final por estágio) com **escala automática 20° ± 5°**
+- [x] Gráfico tempo × deslocamento
+- [x] Sobreposição de retas de ruptura e curvas extrapoladas
+- [x] Tabela editável de estágios, alertas de dispersão
+- [x] Publicação no GitHub Pages
 
 ## Fase 3 — Métodos complementares
-- [ ] Chin-Kondner, Décourt (rigidez), Mazurkiewicz (1972)/Massad, Brinch-Hansen 80 % e 90 %
-- [ ] Terzaghi 10 % D, recalque-limite, Butler-Hoy, Fuller-Hoy, De Beer
-- [ ] Gráficos auxiliares por método e seleção de pontos no ajuste
+- [x] Chin-Kondner, Décourt (rigidez), Mazurkiewicz (1972)/Massad, Brinch-Hansen 80 % e 90 %
+- [x] Terzaghi 10 % D, recalque-limite, Butler-Hoy, Fuller-Hoy, De Beer
+- [x] Gráficos auxiliares por método e escolha dos N últimos estágios no ajuste
+- [ ] Seleção de pontos clicando no gráfico
 - [ ] Indicador de confiabilidade da extrapolação
 
 ## Fase 4 — Memória de cálculo e relatório
-- [ ] Memória de cálculo passo a passo na tela (KaTeX + tabelas)
+- [x] Memória de cálculo passo a passo na tela (KaTeX + tabelas)
 - [ ] Relatório DOCX (equações nativas do Word) e PDF, gráficos em escala normativa
-- [ ] Exportação PNG de cada gráfico
+- [x] Exportação PNG de cada gráfico
 - [ ] Salvar/abrir projeto (.json)
 
 ## Fase 5 — Evoluções
