@@ -24,14 +24,14 @@ Cada método e funcionalidade tem um status:
 - 🔵 **Validado** — formulação conferida com a bibliografia de referência
 - 🔴 **Reprovado** — fora do escopo (mantido no histórico)
 
-## Stack proposta (a aprovar)
+## Stack 🟢 aprovada
 
-Aplicação web estática (roda 100% no navegador, sem servidor, dados não saem do computador):
+Aplicação web estática: roda 100% no navegador, sem instalar nada, publicada no **GitHub Pages**; os dados não saem do computador do usuário.
 
 - **React + TypeScript + Vite**
-- **SheetJS** para leitura de `.xlsx` / `.csv`
-- **Plotly.js** para gráficos interativos com escala controlada (regra dos 20°)
-- Núcleo de cálculo em TypeScript puro, isolado da interface e coberto por testes (**Vitest**) com casos-exemplo da bibliografia
-- Publicação gratuita via **GitHub Pages**; exportação de relatório em PDF
-
-Alternativa: Python + Streamlit (mais rápido de prototipar, mas exige servidor para uso online).
+- **SheetJS** — leitura de `.xlsx` / `.csv`
+- **Plotly.js** — gráficos interativos (valores ao passar o mouse, zoom, tela cheia, exportar PNG) com escala controlada (regra dos 20°)
+- **KaTeX** — equações formatadas na memória de cálculo
+- **docx** (docx.js) — relatório Word com equações nativas (OMML) e tabelas
+- **pdfmake** / impressão — relatório PDF
+- Núcleo de cálculo em TypeScript puro, isolado da interface, com testes (**Vitest**) contra casos da bibliografia

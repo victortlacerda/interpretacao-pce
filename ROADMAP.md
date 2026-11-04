@@ -7,10 +7,13 @@ Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · �
 - [x] Catálogo de funcionalidades → [docs/funcionalidades.md](docs/funcionalidades.md)
 - [x] Especificação da planilha de entrada + modelo `.xlsx`
 - [x] Diretrizes de design (azul/branco)
-- [ ] Aprovar/reprovar funcionalidades
+- [x] Métodos aprovados: Van der Veen, VdV–Aoki, Chin-Kondner, NBR 6122, Davisson, Brinch-Hansen 80 %, Décourt (1999), Mazurkiewicz (1980)
+- [x] Stack aprovada: web estático no navegador, GitHub Pages
+- [x] Qu por maior R²; L do usuário; E = 20 GPa padrão; tudo editável
+- [x] Saídas: memória de cálculo passo a passo, relatório DOCX + PDF, gráficos interativos com PNG e tela cheia
+- [ ] Aprovar/reprovar demais funcionalidades e métodos complementares
 - [ ] Validar formulação de cada método com a bibliografia do usuário
 - [ ] Confirmar a regra de traçado 20° ± 5° (reta de referência, eixo, item da norma)
-- [ ] Aprovar stack (React+TS web estático × Python/Streamlit)
 - [ ] Reunir 2–3 ensaios reais com resultado conhecido para servir de casos de teste
 
 ## Fase 1 — Núcleo de cálculo (MVP técnico)
@@ -33,10 +36,11 @@ Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · �
 - [ ] Gráficos auxiliares por método e seleção de pontos no ajuste
 - [ ] Indicador de confiabilidade da extrapolação
 
-## Fase 4 — Relatório
-- [ ] Relatório PDF com gráficos em escala normativa
-- [ ] Memorial de cálculo
-- [ ] Exportação Excel e salvar/abrir projeto
+## Fase 4 — Memória de cálculo e relatório
+- [ ] Memória de cálculo passo a passo na tela (KaTeX + tabelas)
+- [ ] Relatório DOCX (equações nativas do Word) e PDF, gráficos em escala normativa
+- [ ] Exportação PNG de cada gráfico
+- [ ] Salvar/abrir projeto (.json)
 
 ## Fase 5 — Evoluções
 - [ ] Ensaio lento: recalque × tempo e verificação de estabilização

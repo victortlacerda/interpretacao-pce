@@ -1,6 +1,27 @@
 # Métodos de interpretação da curva carga × recalque
 
-Todas as formulações abaixo estão **pendentes de validação** contra a bibliografia de referência do usuário. Notação comum:
+## Escopo aprovado
+
+| Método | Status |
+|---|---|
+| Van der Veen (1953) | 🟢 |
+| Van der Veen modificado por Aoki (1976) | 🟢 |
+| Chin-Kondner (1970/1971) | 🟢 |
+| Ruptura convencional ABNT NBR 6122 | 🟢 |
+| Davisson (1972) | 🟢 |
+| Brinch-Hansen — critério dos 80 % | 🟢 |
+| Décourt — rigidez hiperbólica (1999) | 🟢 |
+| Mazurkiewicz (1980) | 🟢 |
+| Complementares sugeridos: Massad (1986), Brinch-Hansen 90 %, 10 % D, Butler-Hoy, Fuller-Hoy, De Beer | 🟡 |
+
+## Decisões de parâmetros
+
+- **L**: comprimento da estaca informado pelo usuário.
+- **E**: padrão **20 GPa**, editável.
+- **Todos os parâmetros editáveis** (D, L, A, E, constantes dos critérios, estágios usados em cada ajuste).
+- **Escolha de Qu nos métodos iterativos (Van der Veen, Aoki): maior R².**
+
+As formulações abaixo ainda devem ser **conferidas com a bibliografia de referência do usuário** (🔵 após conferência). Notação comum:
 
 | Símbolo | Significado | Unidade sugerida |
 |---|---|---|
@@ -16,7 +37,7 @@ Todas as formulações abaixo estão **pendentes de validação** contra a bibli
 
 ## 1. Critérios de ruptura convencional (não extrapolam; interceptam a curva)
 
-### 1.1 NBR 6122:2019 — ruptura convencional 🟡
+### 1.1 NBR 6122:2019 — ruptura convencional 🟢
 Reta de ruptura convencional:
 
 ```
@@ -25,13 +46,11 @@ r = Q·L / (A·E) + D/30
 
 A carga de ruptura convencional é a interseção desta reta com a curva carga × recalque (medida ou extrapolada).
 
-Pontos a validar:
-- Item/numeração exata na NBR 6122:2019 e redação para "curva não atinge a reta" (uso obrigatório de extrapolação?).
-- Comprimento L a adotar (comprimento total × comprimento até o centro de resistência).
-- Valores de E por tipo de estaca adotados no app (concreto moldado in loco, pré-moldado, metálica, hélice contínua, raiz…).
-- **Regra de traçado do gráfico (20° ± 5°)** — ver seção 4.
+L é o comprimento informado pelo usuário e E vale 20 GPa por padrão, ambos editáveis. Se a curva medida não atingir a reta, a interseção é feita com a curva extrapolada (por padrão, Van der Veen–Aoki), indicando de qual curva veio o resultado.
 
-### 1.2 Davisson (1972) 🟡
+Pontos a validar: item exato na NBR 6122:2019; regra de traçado 20° ± 5° (seção 4).
+
+### 1.2 Davisson (1972) 🟢
 ```
 r = Q·L / (A·E) + 3,8 mm + D/120        (D em mm)
 ```
@@ -52,44 +71,47 @@ Curva em escala log-log; a ruptura é o ponto de quebra entre os dois trechos re
 
 ## 2. Métodos de extrapolação (ajuste matemático da curva)
 
-### 2.1 Van der Veen (1953) 🟡
+### 2.1 Van der Veen (1953) 🟢
 ```
 Q = Qu · (1 − e^(−α·r))
 ```
 Linearização: `−ln(1 − Q/Qu) = α·r`. Procedimento: arbitrar valores de Qu ≥ Qmáx e escolher o que torna a relação mais próxima de uma reta (maior R²).
 
-### 2.2 Van der Veen modificado por Aoki (1976) 🟡
+### 2.2 Van der Veen modificado por Aoki (1976) 🟢
 ```
 Q = Qu · (1 − e^(−(α·r + β)))
 −ln(1 − Q/Qu) = α·r + β
 ```
-O intercepto β permite que a reta não passe pela origem. Pontos a validar:
-- Critério de escolha de Qu (máx. R²; ou varredura com incremento de ~0,5 % de Qmáx até a reta ficar retilínea).
-- Quais estágios entram no ajuste (todos, apenas carregamento, descartando primeiros estágios).
-- Limite de confiabilidade: recomendações de que a extrapolação só é confiável se o ensaio atingir parcela relevante de Qu (ex.: Velloso & Lopes citam ≥ 2/3 Qu) e/ou recalque mínimo — **regra a ser definida pela bibliografia**.
+O intercepto β permite que a reta não passe pela origem.
 
-### 2.3 Chin-Kondner (Chin, 1970/1971; Kondner, 1963) 🟡
+Procedimento adotado: varredura de Qu a partir de Qmáx (passo fino, refinado em torno do ótimo) e **escolha do Qu de maior R²**. A memória de cálculo mostra a tabela Qu × R² e o gráfico R² × Qu. Por padrão entram os estágios de carregamento, e o usuário pode excluir estágios.
+
+Pontos a validar: limite de confiabilidade da extrapolação (ex.: Qmáx/Qu mínimo), exibido apenas como aviso.
+
+### 2.3 Chin-Kondner (Chin, 1970/1971; Kondner, 1963) 🟢
 Hipérbole:
 ```
 r/Q = C1·r + C2        →   Qu = 1/C1
 ```
 Ajuste no trecho final linear. Variante Chin (1978): dois trechos (atrito: 1/C1; total: 1/C2). Válido para estágios de carga iguais e tempos iguais.
 
-### 2.4 Décourt (1996, 2008) — rigidez 🟡
+### 2.4 Décourt — rigidez hiperbólica (1996, 1999, 2008) 🟢
 ```
 K = Q / r ;   K = a + b·Q   (regressão no trecho final)
 Qu = −a / b    (carga para K = 0)
 ```
 Gráfico de rigidez × carga; permite discutir ruptura física × convencional e separar domínio de atrito e de ponta (Décourt 2008).
 
-### 2.5 Mazurkiewicz (1972) e Massad (1986) 🟡
+### 2.5 Mazurkiewicz (1972/1980) 🟢 e Massad (1986) 🟡
+
+Mazurkiewicz (procedimento gráfico): traçar recalques igualmente espaçados, ler as cargas correspondentes, levar cada carga Q(k) ao eixo e traçar a 45° até a vertical de Q(k+1); os pontos de interseção alinham-se numa reta cuja interseção com o eixo das cargas dá Qu. Massad formaliza o mesmo procedimento algebricamente:
 Recalques igualmente espaçados Δr; plotar Q(k+1) × Q(k), ajustar reta `Q(k+1) = a + b·Q(k)` no trecho final e intersectar com a reta 45°:
 ```
 Qu = a / (1 − b)
 ```
 Massad mostrou equivalência com Van der Veen.
 
-### 2.6 Brinch-Hansen 80 % e 90 % (1963) 🟡
+### 2.6 Brinch-Hansen 80 % 🟢 e 90 % 🟡 (1963)
 - **90 %**: Qu é a carga cujo recalque é o dobro do recalque sob 0,9·Qu.
 - **80 %**: Qu é a carga cujo recalque é 4× o recalque sob 0,8·Qu; ajuste `√r / Q = C1·r + C2`, com
   `Qu = 1 / (2·√(C1·C2))` e `ru = C2 / C1`.
@@ -103,7 +125,7 @@ Exibição conjunta para apontar se o ensaio está em domínio de atrito ou já 
 
 | Item | Descrição | Status |
 |---|---|---|
-| Carga admissível | Qadm = Qu / FS (FS = 2,0 conforme NBR 6122 quando há prova de carga — **validar**), limitada por critério de recalque | 🟡 |
+| Carga admissível | **Fora do escopo padrão.** A interpretação entrega Qu; fator de segurança é decisão de projeto. Possível campo opcional, desligado por padrão | 🔴/🟡 |
 | Recalque elástico × permanente | A partir do descarregamento (recalque residual) | 🟡 |
 | Encurtamento elástico teórico | Reta PL/AE no gráfico | 🟡 |
 | Verificação de desempenho | Prova de carga atingiu ≥ 1,6 × carga de trabalho? (NBR 6122 — **validar**) | 🟡 |
@@ -125,6 +147,16 @@ A norma estabelece que a curva carga × recalque seja traçada em escala tal que
 
 ---
 
+## 5. Memória de cálculo (obrigatória para todo método)
+
+Para cada método o app e o relatório (DOCX/PDF) mostram, passo a passo:
+1. Dados de entrada utilizados (estágios incluídos, D, L, A, E).
+2. Equação do método, formatada.
+3. Tabela de transformação dos dados (ex.: r, Q, −ln(1−Q/Qu); r/Q; Q/r).
+4. Regressão: coeficientes, R², número de pontos; para Van der Veen/Aoki, tabela Qu × R².
+5. Substituição numérica e resultado final de Qu, com unidade.
+6. Gráfico auxiliar do método e a curva extrapolada sobre a curva medida.
+
 ## Referências preliminares
 
 - ABNT NBR 6122:2019 — Projeto e execução de fundações.
@@ -134,10 +166,11 @@ A norma estabelece que a curva carga × recalque seja traçada em escala tal que
 - Chin, F. K. (1970/1971). Estimation of the ultimate load of piles not carried to failure. SEAGC.
 - Cintra, J. C. A.; Aoki, N.; Tsuha, C. H. C.; Giacheti, H. L. (2013). Fundações: ensaios estáticos e dinâmicos. Oficina de Textos.
 - Davisson, M. T. (1972). High capacity piles. ASCE.
+- Décourt, L. (1999). Behavior of foundations under working load conditions. XI PCSMGE, Foz do Iguaçu.
 - Décourt, L. (1996). A ruptura de fundações avaliada com base no conceito de rigidez. SEFE III.
 - Décourt, L. (2008). Provas de carga em estacas podem dizer muito mais do que têm dito. SEFE VI.
 - Fellenius, B. H. (1980). The analysis of results from routine pile load tests. Ground Engineering. / Basics of Foundation Design.
 - Massad, F. (1986). Notes on the interpretation of failure load from routine pile load tests. Solos e Rochas.
-- Mazurkiewicz, B. K. (1972). Test loading of piles according to Polish regulations.
+- Mazurkiewicz, B. K. (1972). Test loading of piles according to Polish regulations. Swedish Academy of Engineering Sciences. (citado também como 1980 — confirmar edição de referência)
 - Van der Veen, C. (1953). The bearing capacity of a pile. 3rd ICSMFE, Zurich.
 - Velloso, D. A.; Lopes, F. R. (2010). Fundações — volume completo. Oficina de Textos.

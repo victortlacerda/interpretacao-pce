@@ -16,7 +16,7 @@ Pares campo × valor (coluna A = campo, coluna B = valor, coluna C = unidade).
 | Comprimento L | sim | m | |
 | Cota de arrasamento / execução | não | m | |
 | Cota da ponta | não | m | |
-| Módulo E | não | GPa | se vazio, usa valor padrão do tipo |
+| Módulo E | não | GPa | se vazio, usa 20 GPa (editável no app) |
 | Carga de trabalho | não | kN | para verificação de desempenho |
 | Tipo de carregamento | sim | — | lento / rápido / misto |
 | Data | sim | — | |
