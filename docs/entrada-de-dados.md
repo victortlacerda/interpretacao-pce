@@ -17,7 +17,8 @@ Pares campo × valor (coluna A = campo, coluna B = valor, coluna C = unidade).
 | Cota de arrasamento / execução | não | m | |
 | Cota da ponta | não | m | |
 | Módulo E | não | GPa | se vazio, usa 20 GPa (editável no app) |
-| Carga de trabalho | não | kN | para verificação de desempenho |
+| Carga de trabalho estimada (Qt) | recomendado | kN | define a escala 20° ± 5°; se vazio, sugere Qmáx/2 |
+| Diâmetro da ponta | não | mm | Terzaghi 10 % D; se vazio, usa D |
 | Tipo de carregamento | sim | — | lento / rápido / misto |
 | Data | sim | — | |
 | Hora de início | sim | hh:mm | |
@@ -26,14 +27,14 @@ Pares campo × valor (coluna A = campo, coluna B = valor, coluna C = unidade).
 
 ## Aba `Estagios` (obrigatória)
 
-Uma linha por estágio (leitura final estabilizada de cada estágio).
+Uma linha por estágio, com a **leitura inicial e a final** de cada estágio (exigência da apresentação dos resultados).
 
-| Estágio | Fase | Carga (kN) | Relógio 1 (mm) | Relógio 2 (mm) | Relógio 3 (mm) | Relógio 4 (mm) | Hora |
-|---|---|---|---|---|---|---|---|
+| Estágio | Fase | Carga (kN) | Hora início | Hora fim | R1 ini | R2 ini | R3 ini | R4 ini | R1 fim | R2 fim | R3 fim | R4 fim |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
 
 - `Fase`: `C` (carregamento) ou `D` (descarregamento).
-- Número de relógios variável (≥ 1); colunas `Relógio n` extras são reconhecidas automaticamente.
-- Leituras como recalque acumulado (positivo para baixo). Opção de importar leitura bruta do relógio + leitura zero.
+- Leituras em mm, como deslocamento acumulado (positivo para baixo). Número de relógios variável (≥ 1).
+- Média dos relógios calculada pelo app para leitura inicial e final.
 
 ## Aba `Leituras` (opcional, ensaio lento)
 

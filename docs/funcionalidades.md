@@ -10,7 +10,7 @@ Marque cada item como 🟢 aprovado ou 🔴 reprovado. IDs servem para referênc
 | A2 | Planilha-modelo para download, com validação de células e exemplo | 🟢 |
 | A3 | Média automática dos 4 relógios (configurável 2–4+), com descarte manual de relógio defeituoso | 🟢 |
 | A4 | Alerta de dispersão entre relógios (rotação/excentricidade do bloco) — desvio > X % da média | 🟡 |
-| A5 | Leituras tempo × recalque dentro de cada estágio (ensaio lento) e verificação do critério de estabilização | 🟡 |
+| A5 | Leituras tempo × recalque dentro de cada estágio (ensaio lento) e verificação do critério de estabilização | 🟢 |
 | A6 | Edição dos dados em tabela no próprio app (corrigir leitura sem reabrir o Excel) | 🟡 |
 | A7 | Mapeamento de colunas flexível para planilhas fora do padrão (de empresas de ensaio diferentes) | 🟡 |
 | A8 | Propriedades da estaca informadas pelo usuário: tipo, D, L, cotas; E = 20 GPa por padrão; todos os parâmetros editáveis | 🟢 |
@@ -21,12 +21,12 @@ Marque cada item como 🟢 aprovado ou 🔴 reprovado. IDs servem para referênc
 
 | ID | Funcionalidade | Status |
 |---|---|---|
-| B1 | Curva carga × recalque (carregamento e descarregamento), recalque positivo para baixo | 🟢 |
-| B2 | **Escala automática para reta a 20° ± 5° (regra normativa)**, com indicador do ângulo e exportação na mesma escala | 🟢 |
+| B1 | Curva carga × deslocamento com leitura inicial e final de cada estágio (carregamento e descarregamento) | 🟢 |
+| B2 | **Escala automática: reta origem → ponto da carga de trabalho estimada a 20° ± 5° com o eixo das cargas**; indicador do ângulo; exportação na mesma escala | 🟢 |
 | B3 | Sobreposição das retas de ruptura convencional (NBR 6122, Davisson) e do encurtamento elástico PL/AE | 🟢 |
 | B4 | Curvas extrapoladas de cada método sobrepostas, com legenda e liga/desliga | 🟢 |
 | B5 | Gráficos auxiliares por método: −ln(1−Q/Qu) × r (Van der Veen), r/Q × r (Chin), Q/r × Q (Décourt), Q(k+1) × Q(k) (Mazurkiewicz/Massad) | 🟢 |
-| B6 | Recalque × tempo por estágio e recalque × log(tempo) | 🟡 |
+| B6 | Tempo × deslocamento com leituras inicial e final de cada estágio (mesma escala de deslocamentos do gráfico carga × deslocamento) | 🟢 |
 | B7 | Gráfico de leituras individuais dos relógios | 🟡 |
 | B9 | **Gráficos interativos**: valores ao passar o mouse, zoom/pan, ampliar em tela cheia | 🟢 |
 | B8 | Comparação de vários ensaios da mesma obra num só gráfico | 🟡 |
@@ -42,8 +42,8 @@ Marque cada item como 🟢 aprovado ou 🔴 reprovado. IDs servem para referênc
 | C5 | Décourt — rigidez hiperbólica (1999) | 🟢 |
 | C6 | Mazurkiewicz (1980) / Massad | 🟢 |
 | C7 | Brinch-Hansen 80 % (90 % como complementar) | 🟢 |
-| C8 | 10 % D e recalque-limite definido pelo usuário | 🟡 |
-| C9 | Butler-Hoy, Fuller-Hoy, De Beer | 🟡 |
+| C8 | Terzaghi (1942) 10 % D (com referência 2 % D para atrito) e recalque-limite do usuário | 🟢 |
+| C9 | Butler-Hoy, Fuller-Hoy, De Beer | 🟢 |
 | C10 | Seleção de pontos usados em cada ajuste (incluir/excluir estágios clicando no gráfico) | 🟡 |
 | C11 | Indicador de confiabilidade da extrapolação (Qmáx/Qu, R², recalque máximo atingido) | 🟡 |
 | C12 | Tabela-resumo comparativa de Qu entre métodos + carga admissível | 🟢 |

@@ -11,8 +11,14 @@
 | Davisson (1972) | 🟢 |
 | Brinch-Hansen — critério dos 80 % | 🟢 |
 | Décourt — rigidez hiperbólica (1999) | 🟢 |
-| Mazurkiewicz (1980) | 🟢 |
-| Complementares sugeridos: Massad (1986), Brinch-Hansen 90 %, 10 % D, Butler-Hoy, Fuller-Hoy, De Beer | 🟡 |
+| Mazurkiewicz (1972) | 🟢 |
+| Terzaghi (1942) — 10 % D | 🟢 |
+| Massad (1986) | 🟢 |
+| Brinch-Hansen — critério dos 90 % | 🟢 |
+| Butler & Hoy (1977) | 🟢 |
+| Fuller & Hoy (1970) | 🟢 |
+| De Beer (1967) | 🟢 |
+| Recalque-limite definido pelo usuário | 🟢 |
 
 ## Decisões de parâmetros
 
@@ -56,15 +62,23 @@ r = Q·L / (A·E) + 3,8 mm + D/120        (D em mm)
 ```
 (original em polegadas: 0,15 in + D/120). Algumas referências brasileiras arredondam 3,8 mm para 4 mm — parametrizável.
 
-### 1.3 Critérios de recalque fixo 🟡
-- **10 % de D** (Terzaghi; ISSMFE/ISO; Eurocode 7 "10 % D"): Qu = carga para r = 0,10·D.
-- **Recalque-limite definido pelo usuário** (ex.: 25 mm), útil para verificação de desempenho.
+### 1.3 Terzaghi (1942) — 10 % D 🟢
+Critério de ruptura convencional que define, arbitrariamente, a carga de ruptura como a correspondente a um recalque igual a **10 % do diâmetro da ponta** da estaca:
+```
+r_u = 0,10 · D_ponta     →   Qu = Q(r_u)   (interpolada na curva medida ou extrapolada)
+```
+O diâmetro da ponta é editável (padrão = D do fuste; diferente para estacas com base alargada, ex.: Franki).
 
-### 1.4 Fuller & Hoy (1970) e Butler & Hoy (1977) 🟡
+> **Ressalva de experiência prática** (exibida no app e no relatório): o recalque de ruptura convencional é da ordem de **10 % D**, enquanto o recalque necessário para mobilizar o **atrito lateral** é da ordem de **2 % D**. O app marca as duas linhas de referência (0,02·D e 0,10·D) no gráfico carga × recalque.
+
+### 1.4 Recalque-limite definido pelo usuário 🟢
+Qu = carga para um recalque informado (ex.: 25 mm).
+
+### 1.5 Fuller & Hoy (1970) e Butler & Hoy (1977) 🟢
 - Fuller & Hoy: carga em que a tangente à curva atinge inclinação de 0,05 in/ton (≈ 0,14 mm/kN).
 - Butler & Hoy: interseção da tangente inicial com a reta de inclinação 1 in / 20 ton (≈ 0,13 mm/kN) tangente ao trecho final.
 
-### 1.5 De Beer (1967) 🟡
+### 1.6 De Beer (1967) 🟢
 Curva em escala log-log; a ruptura é o ponto de quebra entre os dois trechos retos.
 
 ---
@@ -102,7 +116,7 @@ Qu = −a / b    (carga para K = 0)
 ```
 Gráfico de rigidez × carga; permite discutir ruptura física × convencional e separar domínio de atrito e de ponta (Décourt 2008).
 
-### 2.5 Mazurkiewicz (1972/1980) 🟢 e Massad (1986) 🟡
+### 2.5 Mazurkiewicz (1972) 🟢 e Massad (1986) 🟢
 
 Mazurkiewicz (procedimento gráfico): traçar recalques igualmente espaçados, ler as cargas correspondentes, levar cada carga Q(k) ao eixo e traçar a 45° até a vertical de Q(k+1); os pontos de interseção alinham-se numa reta cuja interseção com o eixo das cargas dá Qu. Massad formaliza o mesmo procedimento algebricamente:
 Recalques igualmente espaçados Δr; plotar Q(k+1) × Q(k), ajustar reta `Q(k+1) = a + b·Q(k)` no trecho final e intersectar com a reta 45°:
@@ -111,7 +125,7 @@ Qu = a / (1 − b)
 ```
 Massad mostrou equivalência com Van der Veen.
 
-### 2.6 Brinch-Hansen 80 % 🟢 e 90 % 🟡 (1963)
+### 2.6 Brinch-Hansen 80 % 🟢 e 90 % 🟢 (1963)
 - **90 %**: Qu é a carga cujo recalque é o dobro do recalque sob 0,9·Qu.
 - **80 %**: Qu é a carga cujo recalque é 4× o recalque sob 0,8·Qu; ajuste `√r / Q = C1·r + C2`, com
   `Qu = 1 / (2·√(C1·C2))` e `ru = C2 / C1`.
@@ -134,16 +148,27 @@ Exibição conjunta para apontar se o ensaio está em domínio de atrito ou já 
 
 ---
 
-## 4. Regra de traçado do gráfico — 20° ± 5° 🟢 (funcionalidade obrigatória)
+## 4. Regra de traçado dos gráficos — 20° ± 5° 🟢 (obrigatória)
 
-A norma estabelece que a curva carga × recalque seja traçada em escala tal que a reta de referência fique com inclinação de **20° ± 5°**. O app deve calcular automaticamente as escalas dos eixos (mm de recalque por unidade de comprimento do gráfico × kN por unidade de comprimento) para atender a esta condição, com:
+Texto normativo (NBR 16903:2020, apresentação dos resultados — **confirmar o item**):
 
-- ajuste automático da razão de aspecto do gráfico (proporção física fixada, independente da tela);
-- exportação (PNG/PDF) mantendo a mesma escala física;
-- indicador visual do ângulo resultante e alerta se fora de 15°–25°;
-- possibilidade de ajuste manual dentro da faixa admissível.
+> Curvas carga × deslocamento e tempo × deslocamento, demonstrando a carga e o deslocamento da leitura inicial e final de cada estágio, adotando-se uma escala em que a reta ligando a origem e o ponto da curva correspondente à **carga estimada de trabalho** resulte em uma inclinação de **20° ± 5° com o eixo das cargas**.
 
-**A validar com a norma:** (a) qual reta é a referência — a reta de ruptura convencional `PL/AE + D/30`, a reta do encurtamento elástico `PL/AE`, ou a secante da origem ao ponto de carga máxima; (b) contra qual eixo o ângulo é medido (eixo das cargas ou dos recalques); (c) item exato da NBR 6122:2019 / NBR 16903:2020.
+### 4.1 Carga de trabalho estimada (Qt)
+O app **pede diretamente a carga de trabalho estimada** (campo da aba `Identificacao`). Se o campo vier vazio, sugere **Qt = Qmáx / 2** (ensaio levado a pelo menos 2× a carga de trabalho), destacado como valor sugerido e editável. Não há fator de segurança envolvido: Qt serve só para definir a escala.
+
+### 4.2 Cálculo da escala
+Eixo das cargas horizontal (Q, para a direita) e eixo dos deslocamentos vertical (r, para baixo).
+1. Obter r_t = recalque da curva na carga Qt (interpolação linear entre estágios de carregamento).
+2. Ângulo no papel com o eixo das cargas: `tan θ = (r_t / s_r) / (Qt / s_Q)`, onde s_Q = kN por cm de papel e s_r = mm por cm de papel.
+3. Fixar θ = 20° (alvo) e a largura útil do gráfico; determinar s_Q pelo maior Q plotado e calcular `s_r = r_t · s_Q / (Qt · tan 20°)`, arredondando para escalas "redondas" (1, 2, 2,5, 5 × 10ⁿ) desde que θ final ∈ [15°, 25°].
+4. A altura do gráfico resulta da faixa de recalques e de s_r; na tela e na exportação (PNG, DOCX, PDF) a proporção física é mantida.
+5. O app mostra a reta auxiliar origem–(Qt, r_t), o ângulo θ obtido e um selo verde (15°–25°) ou alerta.
+
+### 4.3 Representação dos estágios
+- **Carga × deslocamento**: em cada estágio, plotar o ponto da **leitura inicial** e o da **leitura final** (curva em "degraus": trecho vertical = deslocamento durante o estágio à carga constante).
+- **Tempo × deslocamento**: deslocamento ao longo do tempo do ensaio, marcando início e fim de cada estágio e a carga correspondente.
+- Os métodos de interpretação usam, por padrão, a **leitura final** (estabilizada) de cada estágio.
 
 ---
 
@@ -166,11 +191,12 @@ Para cada método o app e o relatório (DOCX/PDF) mostram, passo a passo:
 - Chin, F. K. (1970/1971). Estimation of the ultimate load of piles not carried to failure. SEAGC.
 - Cintra, J. C. A.; Aoki, N.; Tsuha, C. H. C.; Giacheti, H. L. (2013). Fundações: ensaios estáticos e dinâmicos. Oficina de Textos.
 - Davisson, M. T. (1972). High capacity piles. ASCE.
-- Décourt, L. (1999). Behavior of foundations under working load conditions. XI PCSMGE, Foz do Iguaçu.
+- Décourt, L. (1999). Behavior of foundations under working load conditions. XI PCSMGE, Foz do Iguaçu. ✔ confirmado pelo usuário
 - Décourt, L. (1996). A ruptura de fundações avaliada com base no conceito de rigidez. SEFE III.
 - Décourt, L. (2008). Provas de carga em estacas podem dizer muito mais do que têm dito. SEFE VI.
+- Terzaghi, K. (1942). Discussion on the progress report of the committee on the bearing value of pile foundations. Proc. ASCE, 68. — confirmar referência
 - Fellenius, B. H. (1980). The analysis of results from routine pile load tests. Ground Engineering. / Basics of Foundation Design.
 - Massad, F. (1986). Notes on the interpretation of failure load from routine pile load tests. Solos e Rochas.
-- Mazurkiewicz, B. K. (1972). Test loading of piles according to Polish regulations. Swedish Academy of Engineering Sciences. (citado também como 1980 — confirmar edição de referência)
+- Mazurkiewicz, B. K. (1972). Test loading of piles according to Polish regulations. Royal Swedish Academy of Engineering Sciences (IVA), Commission on Pile Research, Report nº 35, Stockholm.
 - Van der Veen, C. (1953). The bearing capacity of a pile. 3rd ICSMFE, Zurich.
 - Velloso, D. A.; Lopes, F. R. (2010). Fundações — volume completo. Oficina de Textos.
