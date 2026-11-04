@@ -30,6 +30,39 @@ function registrarLocale() {
 
 export const MARGEM = { l: 74, r: 24, t: 28, b: 58 };
 
+/** Layout completo (fonte, cores, margens) usado na tela e na exportação. */
+export function layoutBase(layout: any, width: number, height: number) {
+  return {
+    font: { family: 'Inter, system-ui, sans-serif', size: 12, color: '#1F2A37' },
+    paper_bgcolor: '#FFFFFF',
+    plot_bgcolor: '#FFFFFF',
+    margin: MARGEM,
+    hoverlabel: { bgcolor: '#0B3A66', bordercolor: '#0B3A66', font: { color: '#fff', family: 'Inter' } },
+    legend: { orientation: 'h', y: -0.16, x: 0, font: { size: 11 } },
+    separators: ',.',
+    ...layout,
+    width,
+    height,
+    autosize: false,
+  };
+}
+
+/**
+ * Garante a proporção física da área de plotagem (altura/largura = aspecto),
+ * corrigindo o espaço ocupado por legenda e rótulos (margens automáticas).
+ * Essencial para a regra dos 20° ± 5°.
+ */
+export async function ajustarAspecto(el: HTMLElement, aspecto: number) {
+  for (let i = 0; i < 3; i++) {
+    const fl = (el as any)._fullLayout;
+    if (!fl?._size) return;
+    const alvo = fl._size.w * aspecto;
+    const dif = alvo - fl._size.h;
+    if (Math.abs(dif) < 0.5) return;
+    await Plotly.relayout(el as any, { height: Math.round(fl.height + dif) } as any);
+  }
+}
+
 interface Props {
   data: any[];
   layout: any;
@@ -77,38 +110,23 @@ export function Grafico({ data, layout, aspecto, altura = 380, nomeArquivo, titu
   useEffect(() => {
     if (!alvo.current || !largura) return;
     const { width, height } = dims();
-    Plotly.react(
-      alvo.current,
-      data,
-      {
-        font: { family: 'Inter, system-ui, sans-serif', size: 12, color: '#1F2A37' },
-        paper_bgcolor: '#FFFFFF',
-        plot_bgcolor: '#FFFFFF',
-        margin: MARGEM,
-        hoverlabel: { bgcolor: '#0B3A66', bordercolor: '#0B3A66', font: { color: '#fff', family: 'Inter' } },
-        legend: { orientation: 'h', y: -0.16, x: 0, font: { size: 11 } },
-        separators: ',.',
-        ...layout,
-        width,
-        height,
-        autosize: false,
-      },
-      {
-        locale: 'pt-BR',
-        displaylogo: false,
-        responsive: false,
-        scrollZoom: false,
-        modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d'],
-        toImageButtonOptions: { format: 'png', filename: nomeArquivo, scale: 3 },
-      } as any,
-    );
+    const el = alvo.current;
+    Plotly.react(el, data, layoutBase(layout, width, height), {
+      locale: 'pt-BR',
+      displaylogo: false,
+      responsive: false,
+      scrollZoom: false,
+      modeBarButtonsToRemove: ['select2d', 'lasso2d', 'autoScale2d'],
+      toImageButtonOptions: { format: 'png', filename: nomeArquivo, scale: 3 },
+    } as any).then(() => { if (aspecto) ajustarAspecto(el, aspecto); });
   }, [data, layout, largura, tela, aspecto, altura]);
 
   useEffect(() => () => { if (alvo.current) Plotly.purge(alvo.current); }, []);
 
   const png = () => {
     if (!alvo.current) return;
-    Plotly.downloadImage(alvo.current, { format: 'png', filename: nomeArquivo, scale: 3, ...dims() } as any);
+    const fl = (alvo.current as any)._fullLayout;
+    Plotly.downloadImage(alvo.current, { format: 'png', filename: nomeArquivo, scale: 3, width: fl.width, height: fl.height } as any);
   };
   const alternarTela = () => {
     if (document.fullscreenElement) document.exitFullscreen();

@@ -56,7 +56,7 @@ Marque cada item como 🟢 aprovado ou 🔴 reprovado. IDs servem para referênc
 | ID | Funcionalidade | Status |
 |---|---|---|
 | D1 | Relatório **DOCX e PDF** com identificação da obra, dados da estaca, tabela de leituras, gráficos e resultados | 🟢 |
-| D2 | Logo e dados da empresa no cabeçalho do relatório | 🟡 |
+| D2 | Dados da empresa e do responsável técnico (CREA) no relatório; logo: pendente | 🟢 |
 | D3 | Exportar resultados para Excel | 🟡 |
 | D4 | Exportar cada gráfico em PNG (escala normativa) | 🟢 |
 | D5 | **Memória de cálculo passo a passo** no app e no relatório: equações formatadas, tabelas intermediárias, parâmetros e R² de cada ajuste | 🟢 |

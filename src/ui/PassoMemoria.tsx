@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { montarRelatorio } from '../relatorio/modelo';
 import { areaEstaca, diametroPonta, media } from '../core/curva';
 import { fmt } from '../core/formato';
 import type { Interpretacao } from '../core/metodos';
@@ -19,11 +20,7 @@ export function PassoMemoria({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio
 
   return (
     <section className="pilha memoria">
-      <div className="barra-acoes barra-acoes--topo no-print">
-        <span className="dica">Relatório DOCX/PDF formatado: próxima etapa. Por enquanto, use “Imprimir / salvar PDF”.</span>
-        <button className="btn btn--leve" disabled title="Em desenvolvimento">Exportar DOCX</button>
-        <button className="btn btn--primario" onClick={() => window.print()}>Imprimir / salvar PDF</button>
-      </div>
+      <PainelRelatorio ensaio={ensaio} interp={interp} vis={vis} visiveis={visiveis} />
 
       <div className="cartao">
         <h1 className="memoria__titulo">Memória de cálculo — interpretação de prova de carga estática</h1>
@@ -119,6 +116,69 @@ function MetodoMemoria({ n, r, interp }: { n: number; r: Interpretacao['resultad
         Resultado: <b>{r.Qu !== null ? `Qu = ${fmt(r.Qu, 1)} ${interp.ctx.U}` : STATUS_TXT[r.status]}</b>
         {r.ru !== null && r.Qu !== null && <> · r = {fmt(r.ru, 2)} mm</>}
         {r.fonte && <> · obtido sobre {r.fonte}</>}
+      </div>
+    </div>
+  );
+}
+
+const CHAVE = 'pce-relatorio-v1';
+function lerSalvo() {
+  try { return JSON.parse(localStorage.getItem(CHAVE) || '{}'); } catch { return {}; }
+}
+
+function PainelRelatorio({ ensaio, interp, vis, visiveis }: { ensaio: Ensaio; interp: Interpretacao; vis: Visual; visiveis: Set<string> }) {
+  const salvo = useMemo(lerSalvo, []);
+  const [empresa, setEmpresa] = useState<string>(salvo.empresa ?? '');
+  const [responsavel, setResponsavel] = useState<string>(salvo.responsavel ?? '');
+  const [registro, setRegistro] = useState<string>(salvo.registro ?? '');
+  const [observacoes, setObservacoes] = useState('');
+  const [metodos, setMetodos] = useState<Set<string>>(() => new Set(interp.resultados.map((r) => r.id)));
+  const [estado, setEstado] = useState<string | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const exportar = async (formato: 'docx' | 'pdf') => {
+    setErro(null);
+    try { localStorage.setItem(CHAVE, JSON.stringify({ empresa, responsavel, registro })); } catch { /* sem armazenamento */ }
+    try {
+      setEstado('Preparando relatório…');
+      const { blocos, meta } = montarRelatorio(ensaio, interp, vis, visiveis, { metodos, empresa, responsavel, registro, observacoes });
+      const { exportarRelatorio } = await import('../relatorio/exportar');
+      await exportarRelatorio(formato, blocos, meta, setEstado);
+    } catch (e: any) {
+      console.error(e);
+      setErro(`Não foi possível gerar o relatório: ${e?.message ?? e}`);
+    } finally { setEstado(null); }
+  };
+  const alternar = (id: string) => { const n = new Set(metodos); n.has(id) ? n.delete(id) : n.add(id); setMetodos(n); };
+
+  return (
+    <div className="cartao no-print painel-relatorio">
+      <div className="cartao__cab">
+        <h2>Relatório</h2>
+        <div className="barra-acoes">
+          {estado && <span className="dica">{estado}</span>}
+          <button className="btn btn--leve" onClick={() => window.print()} disabled={!!estado}>Imprimir</button>
+          <button className="btn btn--leve" onClick={() => exportar('docx')} disabled={!!estado}>Exportar DOCX</button>
+          <button className="btn btn--primario" onClick={() => exportar('pdf')} disabled={!!estado}>Exportar PDF</button>
+        </div>
+      </div>
+      {erro && <div className="alerta alerta--erro">{erro}</div>}
+      <div className="grade-campos">
+        <label className="campo"><span className="campo__rotulo">Empresa</span><input className="input" value={empresa} onChange={(e) => setEmpresa(e.target.value)} /></label>
+        <label className="campo"><span className="campo__rotulo">Responsável técnico</span><input className="input" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} /></label>
+        <label className="campo"><span className="campo__rotulo">Registro (CREA)</span><input className="input" value={registro} onChange={(e) => setRegistro(e.target.value)} /></label>
+      </div>
+      <label className="campo"><span className="campo__rotulo">Observações (opcional)</span>
+        <textarea className="input" rows={2} value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
+      </label>
+      <div>
+        <span className="campo__rotulo">Métodos incluídos no relatório</span>
+        <div className="chips">
+          {interp.resultados.map((r) => (
+            <label key={r.id} className="chip-check"><input type="checkbox" checked={metodos.has(r.id)} onChange={() => alternar(r.id)} />{r.nome}</label>
+          ))}
+        </div>
+        <p className="dica">A Figura 1 do relatório mostra os métodos marcados no gráfico da etapa Interpretar.</p>
       </div>
     </div>
   );

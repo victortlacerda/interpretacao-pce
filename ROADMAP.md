@@ -1,6 +1,6 @@
 # Roadmap
 
-**Versão atual: v0.1** — app publicado em https://victortlacerda.github.io/interpretacao-pce/
+**Versão atual: v0.2** — app publicado em https://victortlacerda.github.io/interpretacao-pce/
 
 Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · 🔴 reprovado
 
@@ -46,7 +46,9 @@ Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · �
 
 ## Fase 4 — Memória de cálculo e relatório
 - [x] Memória de cálculo passo a passo na tela (KaTeX + tabelas)
-- [ ] Relatório DOCX (equações nativas do Word) e PDF, gráficos em escala normativa
+- [x] Relatório DOCX (equações nativas do Word, editáveis) e PDF paginado, gráficos em escala normativa
+- [x] Responsável técnico, CREA, empresa, observações e escolha dos métodos incluídos
+- [x] Proporção física exata da área de plotagem (regra dos 20° preservada na tela e nos arquivos)
 - [x] Exportação PNG de cada gráfico
 - [ ] Salvar/abrir projeto (.json)
 

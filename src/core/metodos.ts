@@ -314,7 +314,7 @@ function metodoChin(ctx: Contexto): Resultado {
   const aj = ajusteLinear(usados.map((p) => p.r), usados.map((p) => p.r / p.Q));
   const C1 = aj.b, C2 = aj.a;
   const passos: Passo[] = [
-    { titulo: 'Equação do método', tex: ['\\frac{r}{Q} = C_1\\, r + C_2', 'Q_u = \\frac{1}{C_1}'], texto: 'Curva carga × recalque hiperbólica; Qu é a assíntota (r → ∞).' },
+    { titulo: 'Equação do método', tex: ['\\frac{r}{Q} = C_1\\, r + C_2', 'Q_u = \\frac{1}{C_1}'], texto: 'Curva carga × recalque hiperbólica; Qu é a assíntota horizontal (carga para recalque tendendo ao infinito).' },
     {
       titulo: `Pontos usados no ajuste (${usados.length} últimos estágios)`,
       tabela: tabelaPontos(usados, [{ cab: `r/Q (mm/${U})`, f: (p) => fmtSci(p.r / p.Q, 6) }]),
@@ -692,7 +692,7 @@ export function interpretar(ens: Ensaio, p: Parametros, u: Unidade = UNIDADE_KN)
   ], [{ r: ruT, nome: '10 % D' }, { r: 0.02 * ctx.Dp, nome: '2 % D (atrito)' }]);
 
   const lim = recalqueFixo(ctx, baseOk, 'limite', `Recalque-limite (${fmt(p.recalqueLimite, 1)} mm)`, 'Definido pelo usuário', p.recalqueLimite, [
-    { titulo: 'Critério', texto: 'Carga correspondente a um recalque-limite definido pelo usuário.', tex: [`r_{lim} = ${tx(p.recalqueLimite, 1)}\\ \\text{mm}`] },
+    { titulo: 'Critério', texto: 'Carga correspondente a um recalque-limite definido pelo usuário.', tex: [`r_{\\text{lim}} = ${tx(p.recalqueLimite, 1)}\\ \\text{mm}`] },
   ], [{ r: p.recalqueLimite, nome: `r lim` }]);
 
   const resultados = [
