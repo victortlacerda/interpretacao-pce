@@ -7,7 +7,7 @@ Legenda: 🟡 proposto · 🟢 aprovado · 🔵 validado com bibliografia · �
 - [x] Catálogo de funcionalidades → [docs/funcionalidades.md](docs/funcionalidades.md)
 - [x] Especificação da planilha de entrada + modelo `.xlsx`
 - [x] Diretrizes de design (azul/branco)
-- [x] Métodos aprovados: Van der Veen, VdV–Aoki, Chin-Kondner, NBR 6122, Davisson, Brinch-Hansen 80 %, Décourt (1999), Mazurkiewicz (1980)
+- [x] Métodos aprovados: Van der Veen, VdV–Aoki, Chin-Kondner, NBR 6122, Davisson, Brinch-Hansen 80 %, Décourt (1999), Mazurkiewicz (1972)
 - [x] Stack aprovada: web estático no navegador, GitHub Pages
 - [x] Qu por maior R²; L do usuário; E = 20 GPa padrão; tudo editável
 - [x] Saídas: memória de cálculo passo a passo, relatório DOCX + PDF, gráficos interativos com PNG e tela cheia
